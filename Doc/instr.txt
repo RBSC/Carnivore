@@ -1,0 +1,17 @@
+C1,C2 - 10uF 10v
+C2 has wrong polarity on board!!!
+
+(smd 0603)
+C3-C11, C16 - 0.1uF
+C12-C14
+
+
+(smd 0603)
+R1 -R41 - 100 om
+R45-R50 - 1 kOm
+R65 - 1 om *
+R52,53,54 - 1 kOm *
+R55,56,57 - 1 kOm *
+R58,59,60 - 6.2 kOm *
+
+LM1117ADJ (SOT223)
