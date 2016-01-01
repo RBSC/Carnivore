@@ -606,6 +606,10 @@ Setfnt:	push	AF
 	push	hl
 	push	de
 	push	bc
+	ld	hl,#0F84
+	ld	(#4F81),hl
+	xor	a
+	ld	(#4F83),a	; disable 'hole' in ROM
         ld	a,(CHSETS)
 	ld	(#D100),a	; save bios font's slot
 	ld	hl,(CHSETA)
