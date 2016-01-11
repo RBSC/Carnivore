@@ -118,10 +118,17 @@ Menu:
 	exx
 
 Pagep:	
+	ld	a,4
+	ld	(FORCLR),a
+	ld	a,4
+	ld	(BAKCLR),a
+	ld	(BDRCLR),a
+	call	CHCOLOR		; set screen colors
+
 	call	CLS
 	LD	HL,#0101
 	call    POSIT
-	ld	hl,StMSG_S	; Start MEssage
+	ld	hl,StMSG_S	; Start Message
 	call	print	
 	LD	HL,#2005
 	call    POSIT
@@ -129,7 +136,6 @@ Pagep:
 	ld	a,c
 	exx
 	call	hexout
-
 
 	ld	e,0	; str = 0
 	exx
@@ -217,13 +223,19 @@ CH00:
 	call	POSIT
 
 
-CH01:	
+CH01:	ld	a,14
+	ld	(FORCLR),a
+	ld	a,4
+	ld	(BAKCLR),a
+	ld	(BDRCLR),a
+	call	CHCOLOR		; set screen colors
+	
 	call	CHGET
 	cp	27	; ESC
 	jp	z,Exit
 	cp	30	; UP
 	jp	z,C_UP
-	cp	31	; down
+	cp	31	; DOWN
 	jp	z,C_DOWN
 	cp	29	; LEFT
 	jp	z,P_B
@@ -242,6 +254,8 @@ CH01:
 	cp	"?"
 	jp	z,Help
 	cp	"h"
+	jp	z,Help
+	cp	"H"
 	jp	z,Help
 	jr	CH01
 C_UP:
@@ -561,10 +575,24 @@ RAMEE
 Help:
 ; Print help informations page
 	call	CLS
+	ld	a,4
+	ld	(FORCLR),a
+	ld	a,4
+	ld	(BAKCLR),a
+	ld	(BDRCLR),a
+	call	CHCOLOR		; set screen colors
+
 	ld	hl,helpmsg
 	call	print
 ;	LD	HL,#0101	; removed to avoid highlighting the top of the frame
 ;	call    POSIT
+	ld	a,11
+	ld	(FORCLR),a
+	ld	a,4
+	ld	(BAKCLR),a
+	ld	(BDRCLR),a
+	call	CHCOLOR		; set screen colors
+
 	call	CHGET
 ;	call	CHPUT
 	jp	Pagep
@@ -595,6 +623,9 @@ Restfnt:
 	ld	(BAKCLR),a
 	ld	(BDRCLR),a
 	call	CHCOLOR		; set screen colors
+        LD	A,4
+  	LD	HL,#0711
+	CALL	PALETTE
 	call	CLS
 	pop	bc
 	pop	de
@@ -624,18 +655,37 @@ Setfnt:	push	AF
 	call	SSCREEN		; set screen 0
 	call	MODE40		; set 40x25 mode
 	call	DISKEYS		; no functional key display
-	ld	a,14
+	ld	a,4
 	ld	(FORCLR),a
-	ld	a,1
+	ld	a,4
 	ld	(BAKCLR),a
 	ld	(BDRCLR),a
 	call	CHCOLOR		; set screen colors
+;	LD	A,14 
+;	LD	HL,#FFFF
+;	CALL	PALETTE
+        LD	A,4
+  	LD	HL,#0211
+	CALL	PALETTE
 	call	CLS
 	pop	bc
 	pop	de
 	pop	hl
 	pop	AF
 	ret
+
+;Set palette for a color
+PALETTE:OUT	(#99),A
+	LD	A,#90
+	OUT	(#99),A
+	EI
+	EX	(SP),HL
+	EX	(SP),HL
+        LD	A,H
+        OUT	(#9A),A
+        LD	A,L
+        OUT	(#9A),A
+	RET	
 
 
 ; Print	String
@@ -766,22 +816,22 @@ StMSG_S:
 	db	#8C,"                                      ",#8D
 	db	#8C," ROM selected for autostart -         ",#8D
 	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
-	db	#8C,"                                      ",#8D
+	db	#8C,#01,#50,"                                    ",#01,#52,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#56,"                                    ",#01,#54,#8D
 	db	#8E,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#89
 	db	0
 
@@ -794,18 +844,18 @@ helpmsg:
 	db	#01,#5B,"                                      ",#01,#5F
 	db	#01,#5B," Menu navigation:                     ",#01,#5F
 	db	#01,#5B,"                                      ",#01,#5F
-	db	#01,#5B,"  [LEFT],[RIGHT] - flip ROM pages     ",#01,#5F
-	db	#01,#5B,"  [UP],[DOWN] - select individual ROM ",#01,#5F
-	db	#01,#5B,"  [SPACE]     - start selected ROM    ",#01,#5F
-	db	#01,#5B,"  [SHIFT]+[R] - start ROM after reset ",#01,#5F
-	db	#01,#5B,"  [SHIFT]+[G] - start ROM immediately ",#01,#5F
-	db	#01,#5B,"  [SHIFT]+[A] - set autostart for ROM ",#01,#5F
-	db	#01,#5B,"  [SHIFT]+[D] - reset ROM autostart   ",#01,#5F
+	db	#01,#5B,#20,#01,#50,"[LEFT],[RIGHT] - previous/next page ",#01,#5F
+	db	#01,#5B,#20,#01,#57,"[UP],[DOWN] - select ROM or SCC     ",#01,#5F
+	db	#01,#5B,#20,#01,#57,"[SPACE]     - start ROM normally    ",#01,#5F
+	db	#01,#5B,#20,#01,#57,"[SHIFT]+[G] - start ROM (alt. mode) ",#01,#5F
+	db	#01,#5B,#20,#01,#57,"[SHIFT]+[R] - reset and start ROM   ",#01,#5F
+	db	#01,#5B,#20,#01,#57,"[SHIFT]+[A] - enable ROM autostart  ",#01,#5F
+	db	#01,#5B,#20,#01,#56,"[SHIFT]+[D] - disable ROM autostart ",#01,#5F
 	db	#01,#5B,"                                      ",#01,#5F
 	db	#01,#5B," Boot option keys:                    ",#01,#5F
 	db	#01,#5B,"                                      ",#01,#5F
-	db	#01,#5B,"  [TAB] - disable ROM autostart       ",#01,#5F
-	db	#01,#5B,"  [F5]  - disable Boot Block          ",#01,#5F
+	db	#01,#5B,#20,#01,#50,"[TAB] - disable ROM autostart       ",#01,#5F
+	db	#01,#5B,#20,#01,#56,"[F5]  - disable Boot Block          ",#01,#5F
 	db	#01,#5B,"                                      ",#01,#5F
 	db	#01,#5B," Press any key to return...           ",#01,#5F		
 	db	#01,#5B,"                                      ",#01,#5F
