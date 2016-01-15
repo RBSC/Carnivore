@@ -1,9 +1,22 @@
-; Bios Call
+; Bios Calls
 ENASLT	equ	#0024
 CHPUT	equ	#00A2
-CLS	equ	#00C3
+CLEARS	equ	#00C3
 POSIT	equ	#00C6
 CHGET	equ	#009F
+SSCREEN	equ	#005F
+MODE40	equ	#0078
+MODE40A	equ	#006C
+CHCOLOR	equ	#0062
+ENAKEYS	equ	#00CF
+DISKEYS	equ	#00CC
+
+FORCLR 	equ	#F3E9
+BAKCLR 	equ	#F3EA
+BDRCLR 	equ	#F3EB
+CHSETA	equ	#F920
+CHSETS	equ	#F91F
+SCR0WID	equ	#F3AE
 
 ; Card configuration registers
 CardMDR equ	#4F80
@@ -20,15 +33,44 @@ L_STR	equ	16
 	db	0,0,0,0,0,0
 	db	"CSCCFRC"
 
+;	Frames ASCII codes
+;	
+;	Thick
+;	#80,#85,#85,#81
+;	#86,#20,#20,#87
+;	#82,#84,#84,#83
+;	
+;	Thin
+;	#01,#50,#01,#51,#01,#51,#01,#52
+;	#01,#57,#20,#20,#01,#53
+;	#01,#56,#01,#55,#01,#55,#01,#54
+;	
+;	Medium
+;	#88,#8A,#8A,#8F
+;	#8C,#20,#20,#8D
+;	#8E,#8B,#8B,#89
+;	
+;	Double
+;	#01,#58,#01,#59,#01,#59,#01,#5A
+;	#01,#5B,#20,#20,#01,#5F
+;	#01,#5E,#01,#5D,#01,#5D,#01,#5C
+;	
+
 boot:
+		
 ; ESC button exit
 	ld	a,(#FBEC)
 	and	%00000010	; F5 No start cartridge
 	ret	z
+
 ; set slot
 	call	SltDet
 	ld	h,#80
 	call	ENASLT		; Set slot 8000-BFFF the same on 4000-3FFF
+
+;set font
+;check for incompatible systems and skip font loading
+        call	Setfnt
 
 ; Set Cart, Register
 	ld	hl,B2ON
@@ -71,15 +113,25 @@ Menu:
 	exx
 	ld	a,1
 	ld	(CardMDR+#0E),a ; set 2nd bank to directory map
-
-
 	exx
 	ld	d,0
 	exx
+
 Pagep:	
+	ld	a,4
+	ld	(FORCLR),a
+	ld	a,4
+	ld	(BAKCLR),a
+	ld	(BDRCLR),a
+	call	CHCOLOR		; set screen colors
+
 	call	CLS
-	ld	hl,StMSG_S	; Start MEssage
+	LD	HL,#0101
+	call    POSIT
+	ld	hl,StMSG_S	; Start Message
 	call	print	
+	LD	HL,#2005
+	call    POSIT
 	exx
 	ld	a,c
 	exx
@@ -108,7 +160,7 @@ prStr:
 ; *(h,l, a b)
 
 ;posit cursor
-	ld	h,1
+	ld	h,3
 	ld	a,e
 	add	a,7
 	ld	l,a
@@ -138,7 +190,7 @@ prStr:
 	ld	a,' '
 	call	CHPUT
 ; print name
-	ld	b,32-6
+	ld	b,30
 sPr:	ld	a,(hl)
 	call	CHPUT
 	inc	hl
@@ -162,7 +214,7 @@ dRec:
 	ld	d,a	; restore dir enter to top page
 CH00:
 ;posit cursor
-	ld	h,3
+	ld	h,5
 	ld	a,e
 	add	a,7
 	ld	l,a
@@ -172,13 +224,19 @@ CH00:
 	call	POSIT
 
 
-CH01:	
+CH01:	ld	a,14
+	ld	(FORCLR),a
+	ld	a,4
+	ld	(BAKCLR),a
+	ld	(BDRCLR),a
+	call	CHCOLOR		; set screen colors
+	
 	call	CHGET
 	cp	27	; ESC
 	jp	z,Exit
 	cp	30	; UP
 	jp	z,C_UP
-	cp	31	; down
+	cp	31	; DOWN
 	jp	z,C_DOWN
 	cp	29	; LEFT
 	jp	z,P_B
@@ -197,6 +255,8 @@ CH01:
 	cp	"?"
 	jp	z,Help
 	cp	"h"
+	jp	z,Help
+	cp	"H"
 	jp	z,Help
 	jr	CH01
 C_UP:
@@ -260,7 +320,7 @@ P_B:
 	ld	d,a	; extract 1st page
 ; previos N str
 	ld	e,L_STR
-PB01	dec	d
+PB01:	dec	d
 	ld	a,#FF
 	cp	d
 	jr	z,PB02	; out of dir
@@ -276,6 +336,7 @@ PB03:	ld	a,d
 	jp	Pagep
 PB02:	ld	d,0
 	jp	PB03
+
 RUN_CT:
 ; Start and autostart
 ; ix - point dir entry
@@ -283,10 +344,38 @@ RUN_CT:
 	bit	0,a
 	jr	nz,RUN_CR
 	bit	1,a
-	ret	z
-	jr	RUN_CJ	
+	jr	nz,RUN_CJ
+	call	Restfnt
+; corr
+	ld	a,%00101110
+	ld	(CardMDR),a
+	ld	a,(ix+2)
+	ld	(CardMDR+#05),a	; set start block
+	push	ix
+	pop	hl
+	ld	bc,#23
+	add	hl,bc	; config data
+	ld	de,CardMDR+#06
+	ld	bc,26
+	ldir
+;	ld	a,(hl)
+;	or	%00001100
+;	ld	(de),a
+	
+	ld	hl,RJP
+	ld	de,R_Base
+	ld	bc,RJPE-RJP
+	ldir
+
+	ld	a,#C9
+	ld	(R_Base+3),a
+	jp	R_Base
+
+
+;	ret
 
 RUN_CR:
+	call	Restfnt
 ; Configurate 	cart register and restart
 ; ix - point dir entry
 ; 
@@ -301,9 +390,10 @@ RUN_CR:
 	ld	de,CardMDR+#06
 	ld	bc,26
 	ldir
-
 	jp	0	;reset operations
+
 RUN_CJ:
+	call	Restfnt
 ; Configurate 	cart register and start ROM
 ; ix - point dir entry
 	ld	a,%00101110
@@ -315,8 +405,12 @@ RUN_CJ:
 	ld	bc,#23
 	add	hl,bc	; config data
 	ld	de,CardMDR+#06
-	ld	bc,26
+	ld	bc,26		; corr
 	ldir
+;	ld	a,(hl)		; corr
+;	or	%00001100	; corr
+	ld	(de),a		; corr
+
 	ld	hl,RJP
 	ld	de,R_Base
 	ld	bc,RJPE-RJP
@@ -327,24 +421,25 @@ RUN_CJ:
 	ld	a,#80
 	ld	(R_Base+5),a
 	jp	R_Base
-
 RJP:	ld	a,(#4000)
 	ld	hl,(#4002)
 	jp	(hl)
 RJPE:	nop
-DAUTO_R
+
+
+DAUTO_R:
 ; deselect (disable) autostart
 	ld	a,2
 	ld	(CardMDR+#0E),a ; set 2nd bank to autostart map
 ; seek to active autostart
 	ld	hl,#8000
-DSA_01	ld	a,(hl)
+DSA_01:	ld	a,(hl)
 	cp	#FF
 	jr	nz,DSA_02 ; next
  	inc	hl
 	ld	a,(hl)	
 	cp	#FF	; deselect ?
-	jp	z,ATR_05; no business
+	jp	z,ATR_04; no business
 ; deactivate	
 	dec	hl
 	call	ATR_B_Erase
@@ -361,13 +456,14 @@ DSA_02:
 	ld	hl,#8000
 	ld	a,#FF
 	jp	ATR_04	
+
 AUTO_R:
 ; set current recod (d) to autostart
 	ld	a,2
 	ld	(CardMDR+#0E),a ; set 2nd bank to autostart map
 ; seek to active autostart
 	ld	hl,#8000
-ATR_01	ld	a,(hl)
+ATR_01:	ld	a,(hl)
 	cp	#FF
 	jr	nz,ATR_02 ; next
  	inc	hl
@@ -392,7 +488,7 @@ ATR_04:	exx
 	ld	a,1
 	ld	(CardMDR+#0E),a ; set 2nd bank to directory map
 ; print new autostart
-	ld	hl,23*256+05
+	ld	hl,32*256+05
 	call	POSIT
 	exx
 	ld	a,c
@@ -470,8 +566,8 @@ RABT2:	ld	a,(hl)
 	and	#20
 	jr	z,RABT2
 RABT1:	ret
-
 RABTE
+
 ATR_M_Erase:
 	di
 	push	de
@@ -510,16 +606,119 @@ RAMEE
 Help:
 ; Print help informations page
 	call	CLS
+	ld	a,4
+	ld	(FORCLR),a
+	ld	a,4
+	ld	(BAKCLR),a
+	ld	(BDRCLR),a
+	call	CHCOLOR		; set screen colors
+
 	ld	hl,helpmsg
 	call	print
-	LD	HL,#0101
+	LD	HL,#1D15	; position cursor after "Press any key"
 	call    POSIT
+
+	ld	a,11
+	ld	(FORCLR),a
+	ld	a,4
+	ld	(BAKCLR),a
+	ld	(BDRCLR),a
+	call	CHCOLOR		; set screen colors
+
 	call	CHGET
-	call	CHPUT
 	jp	Pagep
 
-Exit:	jp	CLS
+Exit:
+	call	Restfnt
+	ret
+
 ;-------------------------------------------------------------------------
+
+;Font address and slot save and restore
+;
+Restfnt:
+	push	AF
+	push	hl
+	push	de
+	push	bc
+	ld	a,(#D100)
+        ld	(CHSETS),a	; restore bios font's slot
+	ld	hl,(#D101)
+	ld	(CHSETA),hl	; restore bios font's address
+	xor	a
+	call	SSCREEN
+	call	MODE40A
+	ld	a,15
+	ld	(FORCLR),a
+	ld	a,4
+	ld	(BAKCLR),a
+	ld	(BDRCLR),a
+	call	CHCOLOR		; set screen colors
+        LD	A,4
+  	LD	HL,#0711
+	CALL	PALETTE
+	call	CLS
+	pop	bc
+	pop	de
+	pop	hl
+	pop	AF
+	ret
+
+Setfnt:	push	AF
+	push	hl
+	push	de
+	push	bc
+	ld	hl,#0F84
+	ld	(#4F81),hl
+	xor	a
+	ld	(#4F83),a	; disable 'hole' in ROM
+        ld	a,(CHSETS)
+	ld	(#D100),a	; save bios font's slot
+	ld	hl,(CHSETA)
+	ld	(#D101),hl	; save bios font's address
+	call	SltDet
+	ld	(CHSETS),a
+	ld	hl,fontdat+1
+	ld	(CHSETA),hl	; set new font address
+	ld	a,40
+	ld	(SCR0WID),a	; set default width of screen0
+	xor	a
+	call	SSCREEN		; set screen 0
+	call	MODE40		; set 40x25 mode
+	call	DISKEYS		; no functional key display
+	ld	a,4
+	ld	(FORCLR),a
+	ld	a,4
+	ld	(BAKCLR),a
+	ld	(BDRCLR),a
+	call	CHCOLOR		; set screen colors
+;	LD	A,14 
+;	LD	HL,#FFFF
+;	CALL	PALETTE
+        LD	A,4
+  	LD	HL,#0211
+	CALL	PALETTE
+	call	CLS
+	pop	bc
+	pop	de
+	pop	hl
+	pop	AF
+	ret
+
+
+;Set palette for a color
+PALETTE:OUT	(#99),A
+	LD	A,#90
+	OUT	(#99),A
+	EI
+	EX	(SP),HL
+	EX	(SP),HL
+        LD	A,H
+        OUT	(#9A),A
+        LD	A,L
+        OUT	(#9A),A
+	RET
+
 
 ; Print	String
 ; Inp reg HL - point start String
@@ -631,36 +830,73 @@ he1:	call	CHPUT
 	add	a,7
 he2:	call	CHPUT
 	ret
+
+CLS:	push	AF
+	push	de
+	push	bc
+	xor	a
+	call	CLEARS
+	pop	bc
+	pop	de
+	pop	AF
+	ret
 	
 StMSG_S:
-;	db	3
-	db	"Multicartridge Carnivore SCC Menu v1.0",#0A,#0D
-	db	"  press '?' for help",#0A,#0A,#0D
-	db	" Autostart selected - "
+	db	#88,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8A,#8F
+	db	#8C," Carnivore MultiFlash SCC Cartridge   ",#8D
+	db	#8C," (C) 2016 RBSC.  Press '?' for Help   ",#8D
+	db	#8C,"                                      ",#8D
+	db	#8C," ROM selected for autostart -         ",#8D
+	db	#8C,"                                      ",#8D
+	db	#8C,#01,#50,"                                    ",#01,#52,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#57,"                                    ",#01,#53,#8D
+	db	#8C,#01,#56,"                                    ",#01,#54,#8D
+	db	#8E,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#8B,#89
 	db	0
+
 helpmsg:
-	db	" Help page",#0A,#0A,#0D
-	db	"Use cursor button for menu navigation",#0A,#0D
-	db	"(UP),(DOWN) - posit to string record",#0A,#0D
-	db	"(LEFT),(RIGHT) - page select",#0A,#0D
-	db	"(SPACE) - start selected record",#0A,#0D	
-	db	"(ESC) - exit to continue booting system",#0A,#0D
-	db	"(SHIFT)+(R) - start record after restart",#0A,#0D
-	db	"(SHIFT)+(G) - start record immediately",#0A,#0D
-	db	"(SHIFT)+(A) - select record to autostart",#0A,#0D
-	db	"(SHIFT)+(D) - unselect autostart",#0A,#0D
-	db	"press at boot:" ,#0A,#0D
-	db	"(TAB) - disable autostart",#0A,#0D
-	db	"(F5)  - disable boot catridge",#0A,#0D
-	db	"press anykey for return"		
+	db	#01,#58,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59
+	db	#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#59,#01,#5A
+	db	#01,#5B," Carnivore Cartridge's Help Screen    ",#01,#5F
+	db	#01,#5B,"                                      ",#01,#5F
+	db	#01,#5B,"  [ESC] - continue booting MSX        ",#01,#5F
+	db	#01,#5B,"                                      ",#01,#5F
+	db	#01,#5B," Menu navigation:                     ",#01,#5F
+	db	#01,#5B,"                                      ",#01,#5F
+	db	#01,#5B,#20,#01,#50,"[LEFT],[RIGHT] - previous/next page ",#01,#5F
+	db	#01,#5B,#20,#01,#57,"[UP],[DOWN] - select ROM or SCC     ",#01,#5F
+	db	#01,#5B,#20,#01,#57,"[SPACE]     - start ROM normally    ",#01,#5F
+	db	#01,#5B,#20,#01,#57,"[SHIFT]+[G] - start ROM directly    ",#01,#5F
+	db	#01,#5B,#20,#01,#57,"[SHIFT]+[R] - start ROM after reset ",#01,#5F
+	db	#01,#5B,#20,#01,#57,"[SHIFT]+[A] - enable ROM autostart  ",#01,#5F
+	db	#01,#5B,#20,#01,#56,"[SHIFT]+[D] - disable ROM autostart ",#01,#5F
+	db	#01,#5B,"                                      ",#01,#5F
+	db	#01,#5B," Boot option keys:                    ",#01,#5F
+	db	#01,#5B,"                                      ",#01,#5F
+	db	#01,#5B,#20,#01,#50,"[TAB] - disable ROM autostart       ",#01,#5F
+	db	#01,#5B,#20,#01,#56,"[F5]  - disable Boot Block          ",#01,#5F
+	db	#01,#5B,"                                      ",#01,#5F
+	db	#01,#5B," Press any key to return...           ",#01,#5F		
+	db	#01,#5B,"                                      ",#01,#5F
+	db	#01,#5E,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D
+	db	#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5D,#01,#5C
 	db	0
 
 B2ON:	db	#F0,#70,#01,#15,#7F,#80
 
+fontdat:db	0
 
-
-
-
-
-
-		
+	include	"font.inc"

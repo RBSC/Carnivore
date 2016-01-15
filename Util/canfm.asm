@@ -101,7 +101,7 @@ _DOSVER:	equ	#6F	;Get DOS version
 
 ; Set screen
 	call	CLRSCR
-
+	call	KEYOFF
 	;--- Checks the DOS version and establishes variable DOS2
 
 	ld	c,_DOSVER
@@ -2843,13 +2843,16 @@ R_DEL1:	ld	hl,256+23
 
 	print	RDELQ_S
 
-	ld	c,_INNOE
+R_DEL1a:ld	c,_INNOE
 	call	DOS
 	cp	"y"
 	pop	de
-	jp	nz,Pagep	; no delete
+	jr	z,R_DEL1b
+	cp	"n"
+	jp	z,Pagep	; no delete
+	jr	R_DEL1a
 
-	call	c_dir
+R_DEL1b:call	c_dir
 	push	ix
 	pop	de
 	inc	de		; dest byte record+1
@@ -2965,8 +2968,17 @@ E_RD1:
 	jr	nc,E_RD4
 	print	FL_erd_S
 	jr	E_RD0
-E_RD4:	
-	print	QDOR_S
+
+E_RD4:	ld	de,(BUFFER)	; !!! Added by Alexey !!!
+	xor	a
+	add	a,d
+	add	a,e
+	or	a
+	or	a		; first entry? (SCC)
+	jr	z,E_RD0		; don't delete!!
+
+	print	QDOR_S		; ask to delete
+
 E_RD5:	ld	c,_INNOE
 	call	DOS
 	cp	"n"
@@ -3003,7 +3015,12 @@ Redit:
 ; drawing edit screen
 ;	print	CLS_S
 	call	CLRSCR
-	print	RPE_S
+	ld	hl,#0116
+	ld	(CSRY),hl	
+	print	GENHLP		; general help
+	ld	hl,#0101
+	ld	(CSRY),hl	
+	print	RPE_S		; print record editing string
 	pop	de
 	ld	a,d
 	call	HEXOUT
@@ -3181,9 +3198,17 @@ rdt20:
 ;	print	CLS_S
 	call	CLRSCR
 	print	PTC_S
-	ld	hl,#0303
+	ld	hl,#0103
 	ld	de,CARTTAB+1
-rdt21:	ld	(CSRY),hl
+rdt21:	push	hl
+	push	de
+	ld	h,1
+	ld	(CSRY),hl
+	print	Selector
+	pop	de
+	pop	hl
+	ld	h,3
+	ld	(CSRY),hl
 	call	PRDE		; print 5 type
 	ex	hl,de
 	ld	bc,#40
@@ -3194,6 +3219,7 @@ rdt21:	ld	(CSRY),hl
 	cp	3+6
 	jr	c,rdt21	
 
+	ld	h,1
 	ld	de,PTCUL_S
 	ld	(CSRY),hl
 	call	PRDE		; print user type load
@@ -3202,6 +3228,10 @@ rdt21:	ld	(CSRY),hl
 	ld	de,PTCE_S	; quit element
 	ld	(CSRY),hl
 	call	PRDE
+
+	ld	hl,#0116
+	ld	(CSRY),hl	
+	print	GENHLP1		; general help1
 
 	ld	hl,#0103
 rdt24:	ld	(CSRY),hl	
@@ -3268,7 +3298,7 @@ rdt30:;copy set
 ;	print	CLS_S	
 	call	CLRSCR
 	print	SSM_S
-	ld	hl,#0303
+	ld	hl,#0103
 	ld	(CSRY),hl	
 	ld	de,ssm01
 	call	PRDE
@@ -3295,10 +3325,10 @@ rdt31:	ld	a,b
 ; select adress ROM start
 	bit	1,a
 	jr	z,rdt36	; no start address
-	ld	hl,#0106
+	ld	hl,#0107
 	ld	de,SSA_S
 	call	PRDE
-	ld	hl,#0307
+	ld	hl,#0108
 	ld	de,ssa01
 	call	PRDE
 	inc	l
@@ -3307,7 +3337,7 @@ rdt31:	ld	a,b
 	inc	l
 	ld	de,ssa03
 	call	PRDE
-	ld	hl,#0108
+	ld	hl,#0109
 	ld	de,#0201
 	call	SELM
 	cp	0
@@ -3326,27 +3356,53 @@ rdt36:
 	ld	a,(BUFFER+2+#3D) ; mini multirom status
 ; select size ROM-Image
 	and	#07
-	jr	z,rdt40		; Mapper RON, not select size
+	jp	z,rdt40		; Mapper RON, not select size
 
-	ld	hl,#010A
+	ld	hl,#010C
 	ld	de,SSR_S
 	call	PRDE
-	ld	hl,#030B
+
+	ld	hl,#030D
+	push	hl
+	ld	h,1
+	ld	(CSRY),hl	
+	print	Selector
+	pop	hl
 	ld	de,ssr64
 	call	PRDE
 	inc	l
+	push	hl
+	ld	h,1
+	ld	(CSRY),hl	
+	print	Selector
+	pop	hl
 	ld	de,ssr48
 	call	PRDE
 	inc	l
+	push	hl
+	ld	h,1
+	ld	(CSRY),hl	
+	print	Selector
+	pop	hl
 	ld	de,ssr32
 	call	PRDE
 	inc	l
+	push	hl
+	ld	h,1
+	ld	(CSRY),hl	
+	print	Selector
+	pop	hl
 	ld	de,ssr16
 	call	PRDE
 	inc	l
+	push	hl
+	ld	h,1
+	ld	(CSRY),hl	
+	print	Selector
+	pop	hl
 	ld	de,ssr08
 	call	PRDE
-	ld	hl,#010B
+	ld	hl,#010D
 	ld	de,#0400
 	call	SELM
 	ld	b,#0E
@@ -3371,10 +3427,10 @@ rdt40:
 	and	7
 	jr	z,rdt60	; mapper ROM, not selected place
 
-	ld	hl,#0111
+	ld	hl,#0113
 	ld	de,SRL_S
 	call	PRDE
-	ld	hl,#0312
+	ld	hl,#0114
 	ld	de,ssa01
 	call	PRDE
 	inc	l
@@ -3384,7 +3440,7 @@ rdt40:
 	ld	de,ssa03
 	call	PRDE
 
-	ld	hl,#0113
+	ld	hl,#0114
 	ld	de,#0201
 	call	SELM
 ; 0 - #0000, 1-#4000 2 -#8000
@@ -3402,7 +3458,7 @@ rdt48:	ld	a,b
 			
 
 ; select place in FleshBlock
-rdt50:	ld	hl,#0115
+rdt50:	ld	hl,#0118
 	ld	de,SFL_S
 	call	PRDE
 	ld	a,1
@@ -3538,7 +3594,7 @@ cemdi2:	pop	de
 ;
 rdte01:
 	call	CLSM
-	ld	hl,#0105
+	ld	hl,#0104
 	ld	de,GHME	; general help
 	ld	(CSRY),hl	
 	ld	c,_STROUT
@@ -3650,7 +3706,7 @@ rdte06:
 rdte11:
 ; clear context help area
 	call	CCHA
-; print context help
+; print no-edit notice
 	ld	hl,#0100+22
 	ld	de,Hprot
 	call	PRDE	
@@ -3660,6 +3716,16 @@ rdte11:
 
 ; Extend edit data
 rdte10:
+; check byte protect
+	ld	b,a
+	ld	a,(protect)
+	or	a
+	jr	z,rdte10a
+	ld	a,(iy+10)
+	or	a
+	jr	nz,rdte11
+
+rdte10a:
 	call	CLSM	; clear "help" area
 
 	ld	a,(iy+4)
@@ -4602,35 +4668,48 @@ PRB1:	ld	a,(hl)
 
 ; Clear screen and set mode 80
 CLRSCR:
-	ld	a,80		; Will not work on MSX1!
-	ld	(SCR0WID),a	; set default width of screen0
+;	ld	a,40		; 40 symbols for screen0
+;	ld	(SCR0WID),a	; set default width of screen0
 	xor	a
 	ld	ix, #005F
 	ld	iy,0
 	call	CALLSLT		; set screen 0
 	ret
 
+; Hide functional keys
+KEYOFF:	ld	ix, #00CC
+	ld	iy,0
+	call	CALLSLT		; set screen 0
+	ret
+
+; Unhide functional keys
+KEYON:	ld	ix, #00CF
+	ld	iy,0
+	call	CALLSLT		; set screen 0
+	ret
+
+
 	
 PRESENT_S:
 	db	3
-	db	"FlashROM Manager for Carnivore SCC Cartridge v1.00",13,10
+	db	"FlashROM Manager for Carnivore SCC v1.0",13,10
 	db	"(C) 2015-2016 RBSC. All rights reserved.",13,10,13,10,"$"
 NSFin_S:
-	db	"Carnivore cartridge is not found. Specify slot number - $"
+	db	"Carnivore cartridge was not found. Please specify its slot number - $"
 Findcrt_S:
 	db	"Found Carnivore cartrigde in slot(s): $"
 FindcrI_S:
-	db	13,10,"Press ENTER for the found slot or specify new slot number - $"
+	db	13,10,"Press ENTER for the found slot or specify a new slot number - $"
 DESCR:	db	"CSCCFRC"
 USEDOS2_S:
 	db	"*** Please use DOS2! *** "
 CRLF_S:	db	13,10,"$"
-SltN_S:	db	13,10,"Slot - $"
+SltN_S:	db	13,10,13,10,"Using slot - $"
 M29W640:
         db      "Detected: M29W640G$"
 NOTD_S:	db	13,10,"Flash chip's type is not detected!",13,10
-	db	"This cartridge is not open for writing or is defective!",13,10
-	db	"Try to reboot and hold down [F5] key...",13,10 
+	db	"This cartridge is not open for writing or may be defective!",13,10
+	db	"Try to reboot and hold down F5 key...",13,10 
 	db	"$"
 MfC_S:	db	"Manufacturer's code: $"
 DVC_S:	db	"Device's code: $"
@@ -4642,6 +4721,7 @@ EXIT_S:	db	10,13,"Thanks for using the RBSC's products!",13,10,"$"
 
 MAIN_S:	db	13,10
 	db	"Main Menu",13,10
+	db	"---------",13,10
 	db	" 1 - Flash new ROM image",13,10
 	db	" 2 - Browse ROM image directory",13,10
 	db	" 8 - Cartridge's service utilites",13,10
@@ -4649,9 +4729,10 @@ MAIN_S:	db	13,10
 
 UTIL_S:	db	13,10
 	db	"Service Menu",13,10
+	db	"------------",13,10
 	db	" 1 - Compress directory entries",13,10
-	db	" 2 - Directory initialization (erase all entries)",13,10
-	db	" 3 - Flash new Boot Block into the flash chip",13,10
+	db	" 2 - Initialize directory (erase all)",13,10
+	db	" 3 - Flash new Boot Block (bootcscc.bin)",13,10
 	db	" 4 - Show flash chip's block usage map",13,10
 	db	" 0 - Return to the main menu",13,10,"$"
 DirComr_S:
@@ -4667,7 +4748,7 @@ Boot_I_S:
 Boot_C_S:
 	db	13,10,"Flashing of new Boot Block is complete!",13,10,"$"
 ADD_RI_S:
-	db	13,10,"Input ROM image's file name for flashing: $"
+	db	13,10,"Input ROM's file name for flashing: $"
 OpFile_S:
 	db	10,13,"Opening file: ","$"
 F_NOT_F_S:
@@ -4688,11 +4769,11 @@ CTC_S:	db	"Do you confirm this mapper type? (y/n)",10,13,"$"
 CoTC_S:	db	"Manual mapper type selection:",13,10,"$"
 Num_S:	db	"Your selection - $"
 FileOver_S:
-	db	"File's too large or there's no free space on flash chip!",13,10,"$"
+	db	"The file is too large or there's no free space on the flash chip!",13,10,"$"
 MRSQ_S:	db	"The ROM's size's between 32kb and 64kb. Create Mini ROM entry? (y/n)",13,10,"$"
 Strm_S:	db	"MMROM-CSRM: $"
 NFNR_S:	db	"Unable to find free entries in the existing Multi ROM entries",#0D,#0A
-	db	"So a new 64kb memory block will be allocated for this ROM",#0A,#0D,"$"
+	db	"A new 64kb memory block will be allocated for this ROM",#0A,#0D,"$"
 FNRE_S:	db	"Using Record-FBlock-NBank for Mini ROM",#0D,#0A
 	db	"[Multi ROM entry] - $"
 DirOver_S:
@@ -4700,7 +4781,7 @@ DirOver_S:
 DirCmpr:db	"Compress directory entries? (y/n)",13,10,"$"
 FFFS_S:	db	"Found free space at: $"
 FDE_S:	db	"Found free directory entry at: $"
-NR_I_S:	db	"Name of the directory entry: $"
+NR_I_S:	db	"Name of directory entry: $"
 NR_L_S: db	"Press ENTER to confirm or input a new name of directory entry:",13,10,"$"
 FLEB_S:	db	"Erasing flash chip's block(s) - $"
 FLEBE_S:db	"Error erasing flash chip's block(s)!",13,10,"$"
@@ -4711,31 +4792,32 @@ FL_er_S:
 	db	13,10,"Flashing operation failed!",13,10,"$"
 FL_erd_S:
 	db	13,10,"Writing directory entry failed!",13,10,"$"
-CRD_S:	db	"Carnivore Cartridge's Directory Editor. Press [ESC] to return",10,13
-	db	"Use cursor keys [UP] or [DOWN] to select a directory entry",10,13
-	db	"Use cursor keys [LEFT] or [RIGHT] to flip directory's pages",10,13
-	db	"Press 'E' or 'e' to edit an entry, 'D' or 'd' to delete an entry$"
+CRD_S:	db	"Directory Editor - Press [ESC] to exit",10,13
+	db	"Use [UP] or [DOWN] to select an entry",10,13
+	db	"Use [LEFT] or [RIGHT] to flip pages",10,13
+	db	"Use 'E' to edit an entry, 'D' to delete$"
 RDELQ_S:
-	db	" - Delete this directory entry? (y/n)$"
-RPE_S:	db	"Edit parameter's record - $"
-NODEL:	db	"This entry can't be deleted or edited! Press any key...$"
-LOAD_S:	db	"The ROM image is ready to be flashed, proceed? (y/n)$"
+	db	" - Delete this entry? (y/n)$"
+NODEL:	db	"Entry can't be deleted! Press any key...$"
+LOAD_S:	db	"Ready to flash the ROM, proceed? (y/n)$"
 QQ:	db	"Map of flash chip blocks:$"
 TWO_NL_S:	db	13,10
 ONE_NL_S:	db	13,10,"$"
 CLS_S:		db	27,"E$"
 CLStr_S:	db	27,"K$"
 INVPAR_S:	db	"*** Invalid parameter(s)",13,10,"$"
-QDOR_S	db	#0D,#0A,"Delete old entry? (y/n)$"
+QDOR_S	db	#0D,#0A,"Delete original entry? (y/n)$"
 
 MAP_E_SCC:
 	db	#00,#FF,00,00,"S"
-	db	"Konami SCC cartridge emulation   $"
-	db	#F8,#50,#00,#8C,#3F,#40	
+	db	"Konami SCC sound cartridge    "
+;	db	#F8,#50,#00,#8C,#3F,#40	
+	db	 #F8,#50,#00,#85,#3F,#40	; corr
 	db	#F8,#70,#01,#8C,#3F,#60		
 	db      #F8,#90,#02,#8C,#3F,#80		
 	db	#F8,#B0,#03,#8C,#3F,#A0	
-	db	#FF,#B2,#00,#00,#FF
+;	db	#FF,#B2,#00,#00,#FF
+	db	#FF,#BC,#00,#00,#FF		; corr
 
 CARTTAB: ; (N x 64 byte) 
 	db	"U"					;1
@@ -4827,11 +4909,11 @@ Temdi:
 	db	0
 	dw	HLNB
 ;5 type descriptor
-	db	13,16
+	db	13,17
 	dw	BUFFER+6
 	db	2
 	db	6
-	db	0,10
+	db	0,11
 	db	4,8
 	db	0
 	db	0
@@ -5033,7 +5115,7 @@ Temdi:
 	db	5
 	db	26
 	db	18,32
-	db	24,25
+	db	24,26
 	db	0
 	db	0
 	dw	HRMult
@@ -5043,7 +5125,7 @@ Temdi:
 	db	4
 	db	27
 	db	19,33
-	db	25,26
+	db	25,27
 	db	0
 	db	0
 	dw	HBMaskR
@@ -5053,7 +5135,7 @@ Temdi:
 	db	4
 	db	28
 	db	20,34
-	db	26,28
+	db	26,29
 	db	0
 	db	0
 	dw	HBAdrD
@@ -5113,7 +5195,7 @@ Temdi:
 	dw	BUFFER+2+#39
 	db	4
 	db	34
-	db	19,39
+	db	26,39
 	db	32,34
 	db	0
 	db	0
@@ -5123,7 +5205,7 @@ Temdi:
 	dw	BUFFER+2+#3A
 	db	4
 	db	35
-	db	20,39
+	db	27,39
 	db	33,35
 	db	0
 	db	0
@@ -5286,96 +5368,102 @@ BHtab:
 	db	0
 
 
-H7hMult	db	" Enable Bank Number register$"
-H6hMult	db	" Mirror over Bank Number$"
-H5hMult	db	" Extend RAM source Bank$"
-H4hMult	db	" Enable write Bank$"
-H3hMult	db	" Disable Bank$"
-H2hMult	db	"] 111-64kB 110-32kB$"
-H1hMult	db	"] 101-16kB 100-08kB$"
-H0hMult	db	"] another 0xx-disable$"
+H7hMult	db	"> Enable Bank number control$"
+H6hMult	db	"> Mirror on Bank num.overrun$"
+H5hMult	db	"> Select RAM for Bank$"
+H4hMult	db	"> Make Bank writeable$"
+H3hMult	db	"> Disable Bank$"
+H2hMult	db	"] 111 - 64kb, 110 - 32kb$"
+H1hMult	db	"] 101 - 16kb, 100 - 8kb$"
+H0hMult	db	"] 000 - bank is disabled$"
 
-H7CMDR	db	" Disable Card.Contr.Register$"
-H6CMDR	db	"] 00-#0F80 01-#4F80 10-#8F80$"
-H5CMDR	db	"] 11-#CF80 base C.C.Register$"
-H4CMDR	db	" Enable SCC music chip emulation$"
-H3CMDR	db	" Enable delayed reconfig.$"
-H2CMDR	db	" reconf.p.: 0-Reset, 1-#4000$"
-H1CMDR	db	" reserve            adr.read$"
-H0CMDR	db	" reserve$"
+H7CMDR	db	"> Disable card.contr.regist.$"		;???????????
+H6CMDR	db	"] C.c.register base: 00-0F80$"
+H5CMDR	db	"] 01-4F80, 10-8F80, 11-CF80$"
+H4CMDR	db	"> Enable Konami SCC sound$"
+H3CMDR	db	"> Enable delayed reconfig.$"
+H2CMDR	db	"> Reconf.p.: 0-reset,1-4000$"
+H1CMDR	db	"> Reserved$"	; adr.read$"		;???????????
+H0CMDR	db	"> Reserved$"
 
-H7MMRD	db	" reserve$"
-H6MMRD	db	"] N=posit.in 64kB FlashBlock$"
+H7MMRD	db	"> Reserved$"
+H6MMRD	db	"] N-position in 64kb block$"
 H5MMRD	db	"] 000-0, 001-1, 010-2, 011-3$"
 H4MMRD	db	"] 100-4, 101-5, 110-6, 111-7$"
-H3MMRD	db	" 1- 48kB size ROM, 0- Other$"
-H2MMRD	db	"] Size ROM 000-Not Mini ROM$"
-H1MMRD	db	"] 111-64kB 110-32/48kB$" 
-H0MMRD	db	"] 101-16kB 100-8kB$"
+H3MMRD	db	"> 1-48kb ROM, 0-other size$"
+H2MMRD	db	"] ROM size: 000-not Mini ROM$"
+H1MMRD	db	"] 111 - 64kb, 110 - 32/48kb$" 
+H0MMRD	db	"] 101 - 16kb, 100 - 8kb$"
 
-H3SRo	db	"Jmp adr. 1-(#0002) 0-see 2b.$"
-H2SRo	db	"Jmp adr. 0-(#4002) 1-(#8002)$"
-H1SRo	db	"0- no Start ROM, 1-Start Jmp$"
-H0SRo	db	"0- no Reset, 1- Reset MSX$"
+H3SRo	db	"> Jump addr: 0-bit 2, 1-0002$"
+H2SRo	db	"> Jump addr: 0-4002, 1-8002$"
+H1SRo	db	"> ROM start: 0 - no, 1 - yes$"
+H0SRo	db	"> Reset MSX: 0 - no, 1 - yes$"
 
-BM_S1	db	"1-Bank$"
-BM_S2	db	"2-Bank$"
-BM_S3	db	"3-Bank$"
-BM_S4	db	"4-Bank$"
-GHME:	db	" Use cursor keys to navigate in the register table",#0D,#0A
-	db	" Enter a new value (HEX byte)",#0D,#0A
-	db	" or press SPACE for editing the bitmask)",#0D,#0A
-	db	" ESC - quit$"
+BM_S1	db	"Bank1:$"
+BM_S2	db	"Bank2:$"
+BM_S3	db	"Bank3:$"
+BM_S4	db	"Bank4:$"
+GENHLP	db	"Use [UP] or [DOWN] to select an option",10,13
+	db	"Use [SPACE] or [ENTER] to confirm$"
+GENHLP1	db	"Use [UP] or [DOWN] to select an entry",10,13
+	db	"Use [SPACE] or [ENTER] to confirm$"
+GHME:	db	"Use cursor keys to select the values",#0D,#0A
+	db	"Input a new byte value (hexadecimal!)",#0D,#0A
+	db	"Use [SPACE] for editing the bitmask",#0D,#0A
+	db	"Use [ESC] to exit$"
 HEMPT	db	"$"
-Hprot	db	" Protected element!",#0D,#0A
-	db	" Set SU mode to access$"
+Hprot	db	"This element can't be edited!",#0D,#0A
+	db	"You need to enable special access mode!$"
 HRecN	db	"ACT - Record active flag",#0D,#0A
-	db	" #FF - empty record, #XX - record number$"
-HPSV:	db	"PSV - Record delete byte (#FF - not delete)$"
-HSTB:	db	"STB - Start block in Flash for ROM-image$"
-HLNB:	db	"LNB - ROM image size (N-blocks by 64kb)$"
-HTDS:	db	"Mapper type symbol$"
+	db	"#FF - empty entry, #XX - entry number$"
+HPSV:	db	"PSV - Delete flag",13,10
+	db	"#00 - deleted entry, #FF - active entry$"
+HSTB:	db	"STB - ROM image's start block in Flash$"
+HLNB:	db	"LNB - ROM image's size (in 64kb blocks)$"
+HTDS:	db	"Mapper type symbol (optional) M=MiniROM,"
+	db	"K=Konami5,k=Konami4,A=ASCII16,a=ASCII8$"
 HRMask	db	"RxMask BitMask for register Bank number",#0D,#0A
 	db	"bit=1 - bit address from RAddr register",#0D,#0A
-	db	"bit=0 - this bit does not affect$"
-HRAddr	db	"The high byte address Bank number register$"
-HRReg	db	"The initial value of the Bank number$"
+	db	"bit=0 - not used$"
+HRAddr	db	"Bank number register (high byte address)$"
+HRReg	db	"Initial Bank number value$"
 HRMult	db	"Multi-control Bank register",#0D,#0A
-	db	"press SPACE for extended editing of bitmask$"
-HBMaskR	db	"Bitmask to limit the value of the Bank number$"
-HBAdrD	db	"The high byte Bank address in CPU memory area$" 
+	db	"Press SPACE for editing the bitmask$"
+HBMaskR	db	"Bitmask to limit Bank number's value$"
+HBAdrD	db	"Bank address in CPU memory (high byte)$" 
 HRez	db	"Reserved bytes (not used)$"
 HCardMDR
-	db	"Main control register CSCC cartridge",#0D,#0A
-	db	"press SPACE for editing the bitmask$"
+	db	"Main control register of CSCC cartridge",#0D,#0A
+	db	"Press SPACE for editing the bitmask$"
 HMRTB	db	"Mini and Multi ROM control register",#0D,#0A
-	db	"press SPACE for editing the bitmask$"
-HSOB	db	"Start ROM-image options register",#0D,#0A
-	db	"press SPACE for editing the bitmask$"
+	db	"Press SPACE for editing the bitmask$"
+HSOB	db	"ROM's starting options register",#0D,#0A
+	db	"Press SPACE for editing the bitmask$"
 
-
+RPE_S:	db	"Editing directory entry - $"
 M_CTS:
-M_CT01:	db	"  Rename entry",#0D,#0A
-M_CT02:	db	"  Preset cardtridge configuration",#0D,#0A
-M_CT03:	db	"  Edit configuration register",#0D,#0A
-M_CT04:	db	"  Save record and exit",#0D,#0A
-M_CT05:	db	"  Quit editor without saving (ESC)",#0D,#0A,"$"
-EWS_S:	db	" Quit without saving? (y/n)$"
-ENNR_S:	db	" Enter new entry name",#0D,#0A,"$"
-SAE_S:	db	" Save and exit? (y/n)$"
-PTC_S:	db	" Select preset register configuration:$"
+M_CT01:	db	"> Rename entry",#0D,#0A
+M_CT02:	db	"> Select preset configuration",#0D,#0A
+M_CT03:	db	"> Edit configuration registers",#0D,#0A
+M_CT04:	db	"> Save and exit",#0D,#0A
+M_CT05:	db	"> Quit without saving [ESC]",#0D,#0A,"$"
+EWS_S:	db	"Quit without saving? (y/n)$"
+ENNR_S:	db	"Enter new entry name:",#0D,#0A,"$"
+SAE_S:	db	"Save and exit? (y/n)$"
+PTC_S:	db	"Select preset register configuration:$"
 PTCUL_S:
-	db	"Load register preset from a .CPC file$"
+	db	"> Load register preset from a .CPC file$"
 PTCE_S:
-	db	"Quit (ESC)$"
+	db	"> Exit [ESC]$"
 SSM_S:	db	"Select ROM's starting method :$"
-ssm01:	db	"Jump to ROM INIT$"
-ssm02:	db	"Reset system$"
-ssm03:	db	"No start$"
+ssm01:	db	"> Use ROM's INIT settings$"
+ssm02:	db	"> Reset computer to start ROM$"
+ssm03:	db	"> Don't start ROM's code$"
 SSA_S:	db	"Select ROM's start page:$"
-ssa01:	db	"#0000$"
-ssa02:	db	"#4000$"
-ssa03:	db	"#8000$"
+ssa01:	db	"> #0000$"
+ssa02:	db	"> #4000$"
+ssa03:	db	"> #8000$"
 SSR_S:	db	"Select ROM's size:$"
 ssrMAP:	db	"64kb or more - mapper type needs to be set!$"
 ssr64:	db	"64kb$"
@@ -5384,9 +5472,10 @@ ssr32:	db	"32kb$"
 ssr16:	db	"16kb$"
 ssr08:	db	"8kb or less$"
 SRL_S:	db	"Select ROM's location:$"
-SFL_S:	db	"Input the location in the FlashBlock(0-7): $"
+SFL_S:	db	"Input location in Flash block (0-7): $"
 EnSm_S:	db	"Input mapper symbol - $"
-
+Selector:
+	db	"> $"
 BTbp_S:	db	"   *--------",#0D,#0A
 	db	"   !*-------",#0D,#0A
 	db	"   !!*------",#0D,#0A
