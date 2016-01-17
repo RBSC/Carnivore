@@ -1,3 +1,9 @@
+;
+; Carnivore SCC Cartridge's FlashROM Manager
+; Copyright (c) 2015-2016 RBSC
+; Version 1.0
+;
+
 ;--- Macro for printing a $-finished string
 
 print	macro	
@@ -99,41 +105,98 @@ _DOSVER:	equ	#6F	;Get DOS version
 	;---  Initialization  ---
 	;------------------------
 
+PRGSTART:
 ; Set screen
 	call	CLRSCR
 	call	KEYOFF
-	;--- Checks the DOS version and establishes variable DOS2
+	;--- Checks the DOS version and sets DOS2 flag
 
 	ld	c,_DOSVER
 	call	DOS
 	or	a
-	jr	nz,NODOS2
+	jr	nz,PRTITLE
 	ld	a,b
 	cp	2
-	jr	c,NODOS2
+	jr	c,PRTITLE
 
 	ld	a,#FF
 	ld	(DOS2),a	;#FF for DOS 2, 0 for DOS 1
-	jr	TITMSG
+;	print	USEDOS2_S	; !!! Commented out by Alexey !!!
 
-NODOS2:	
-	print	USEDOS2_S
-
-
-;--- Prints the tit;e
-
-TITMSG:
+;--- Prints the title
+PRTITLE:
 	print	PRESENT_S
 
+; Flags processing
+	ld	a,1
+	call	F_Key	; C- no parametr; NZ- not flag; S(M)-ilegal flag
+	jr	c,Stfp01
+	jr	nz,Stfp07
+	jp	p,Stfp02
+Stfp03:
+	print	I_FLAG_S
+	jr	Stfp09
+Stfp07:
+	ld	a,1
+	ld	(p1e),a	; File parametr exist
+
+Stfp02:
+	ld	a,2
+	call	F_Key
+	jr	c,Stfp01
+	jp	m,Stfp03
+	jr	z,Stfp04
+Stfp05:
+	print	I_PAR_S
+Stfp09:	
+	print	H_PAR_S
+	ret
+Stfp04:
+	ld	a,3
+	call	F_Key
+	jr	c,Stfp01
+	jp	m,Stfp03
+	jr	nz,Stfp05
+	ld	a,4
+	call	F_Key
+	jr	c,Stfp01
+	jp	m,Stfp03
+	jr	nz,Stfp05
+	ld	a,5
+	call	F_Key
+	jr	c,Stfp01
+	jp	m,Stfp03
+	jr	nz,Stfp05
+	print	I_MPAR_S
+	jr	Stfp09
+Stfp01:
+	ld	a,(p1e)
+	jr	nz,Stfp06	; if not file parametr
+	xor	a
+	ld	(F_A),a		; Flag Automatic not active
+Stfp06:
+	ld	a,(F_SU)
+	or	a
+	jr	z,Stfp08
+	xor	a
+	ld	(protect),a
+
+Stfp08:
 	call	FindSlot
 	jp	c,Exit
-; 
+ 
+	ld	a,(p1e)
+	or	a
+	jr	z,MainM		; no file parametr
+
 	ld	a,1
 	ld	de,BUFFER
 	call	EXTPAR
 	jr	c,MainM		; No parametr
+
 	ld	ix,BUFFER		;
 	call	FnameP
+
 	jp	ADD_OF		; continue loadin ROM-image
 
 
@@ -228,6 +291,9 @@ opf3:	push	bc
 	ld	de,F_NOT_F_S
 	ld	c,_STROUT
 	call	DOS
+	ld	a,(F_A)
+	or	a
+	jp	nz,Exit		; Automatic exit
 	jp	MainM		
 	
 Fpo:
@@ -242,20 +308,22 @@ Fpo:
 	ldir
 
 ; print ROM size in hex
-; !!!! Commented out by Alexey !!!!
-;	ld	a,(Size+3)
-;	call	HEXOUT
-;	ld	a,(Size+2)
-;	call	HEXOUT
-;	ld	a,(Size+1)
-;	call	HEXOUT
-;	ld	a,(Size)
-;	call	HEXOUT
+	ld	a,(F_V)
+	or	a
+	jr	z,vrb00
+	ld	a,(Size+3)
+	call	HEXOUT
+	ld	a,(Size+2)
+	call	HEXOUT
+	ld	a,(Size+1)
+	call	HEXOUT
+	ld	a,(Size)
+	call	HEXOUT
 
-;	ld	de,ONE_NL_S
-;	ld	c,_STROUT
-;	call	DOS	
-; !!!! Commented out by Alexey !!!!
+	ld	de,ONE_NL_S
+	ld	c,_STROUT
+	call	DOS	
+vrb00:
 
 ; File size <= 32 κα ?
 ;	ld	a,(Size+3)
@@ -334,7 +402,7 @@ FMRM01:				; fix size
 	call	DOS
 	print	CRLF_S
 
-; !!!! 8kb file load fix by Alexey !!!!
+; !!!! file attribute kostyl (fix) by Alexey !!!!
 	ld	a,(FCB+#11)
 	cp	#20
 	jr	nz,Fptl
@@ -343,7 +411,7 @@ FMRM01:				; fix size
 	jr	nz,Fptl
 	dec	a
 	ld	(FCB+#0D),a
-; !!!! 8kb file load fix by Alexey !!!!
+; !!!! file attribute kostyl (fix) by Alexey !!!!
 
 ; Analyze ROM-Image
 
@@ -490,35 +558,38 @@ FPT10:
 	call	DOS
 
 ; print test ROM descriptor table
-; !!!! Commented out by Alexey !!!!
+	ld	a,(F_V)
+	or	a
+	jr	z,vrb02
+
 ;	print	CRLF_S
-;	ld	a,(ROMJT0)
-;	call	HEXOUT
-;	ld	e," "
-;	ld	c,_CONOUT
-;	call	DOS
-;	ld	a,(ROMJT1)
-;	call	HEXOUT
-;	ld	e," "
-;	ld	c,_CONOUT
-;	call	DOS
-;	ld	a,(ROMJT2)
-;	call	HEXOUT
-;	print	CRLF_S
-;	ld	a,(ROMJI0)
-;	call	HEXOUT
-;	ld	e," "
-;	ld	c,_CONOUT
-;	call	DOS
-;	ld	a,(ROMJI1)
-;	call	HEXOUT
-;	ld	e," "
-;	ld	c,_CONOUT
-;	call	DOS
-;	ld	a,(ROMJI2)
-;	call	HEXOUT
-;	print	CRLF_S
-; !!!! Commented out by Alexey !!!!
+	ld	a,(ROMJT0)
+	call	HEXOUT
+	ld	e," "
+	ld	c,_CONOUT
+	call	DOS
+	ld	a,(ROMJT1)
+	call	HEXOUT
+	ld	e," "
+	ld	c,_CONOUT
+	call	DOS
+	ld	a,(ROMJT2)
+	call	HEXOUT
+	print	CRLF_S
+	ld	a,(ROMJI0)
+	call	HEXOUT
+	ld	e," "
+	ld	c,_CONOUT
+	call	DOS
+	ld	a,(ROMJI1)
+	call	HEXOUT
+	ld	e," "
+	ld	c,_CONOUT
+	call	DOS
+	ld	a,(ROMJI2)
+	call	HEXOUT
+	print	CRLF_S
+vrb02:
 
 
 ; Map / miniROm select
@@ -526,29 +597,25 @@ FPT10:
 	and	#0F
 	jr	z,FPT01		; MAPPER ROM
 	cp	7
-	jr	c,FPT02		; MINI ROM
-	print	MRSQ_S
-FPT03:	ld	c,_INNOE	; 32 < ROM =< 64
-	call	DOS
-	cp	"n"
-	jr	z,FPT01		;no minirom (mapper)
-	cp	"y"		; yes minirom
-	jr	nz,FPT03
-FPT02:
-; Mini ROM set
+	jp	c,FPT02		; MINI ROM
 
-	ld	b,5
-	push	AF
-	push	bc
-	print	NoAnalyze
-	pop	bc
-	pop	AF
-	jp	DTME1
+;	print	MRSQ_S
+;FPT03:	ld	c,_INNOE	; 32 < ROM =< 64
+;	call	DOS
+;	cp	"n"
+;	jr	z,FPT01		;no minirom (mapper)
+;	cp	"y"		; yes minirom
+;	jr	nz,FPT03
+
+	jr	FPT04		; Go  Mapper detected!
+
+
+
 
 FPT01:
 	xor	a
 	ld	(SRSize),a	
-
+FPT04:
 ; Mapper types Singature
 ; Konami:
 ;    LD    (#6000),a
@@ -680,14 +747,6 @@ DTME:
 	ld	(BMAP),de	;save detect bit mask
 	ld	a,0
 
-	ld	a,(BMAP+1)
-	call	HEXOUT
-	ld	a,(BMAP)
-	call	HEXOUT	
-
-	ld	e," "
-	ld	c,_CONOUT
-	call	DOS
 ;    BIT E 76543210
 ; 	   !!!!!!!. 5000h
 ;          !!!!!!.- 6000h
@@ -724,8 +783,55 @@ DTME2:
 	jr	nz,DTME3
 DTME1:
 	ld	a,b
-	ld	(DMAP),a	; save detect Maper type
-	ld	a,(DMAP)
+	ld	(DMAP),a	; save detected Maper type
+	or	a
+	jr	nz,DTME21
+	
+;mapper not found
+	ld	a,(SRSize)
+	or	a
+	jr	z,DTME22	; size > 64k ? not minirom
+
+	print	MD_Fail
+
+	ld	a,(F_A)
+	or	a
+	jr	nz,FPT02	; flag auto yes
+
+	print	MRSQ_S
+FPT03:	ld	c,_INNOE	; 32 < ROM =< 64
+	call	DOS
+	cp	"n"
+	jp	z,MTC		; no minirom (mapper), select manually
+	cp	"y"		; yes minirom
+	jr	nz,FPT03
+
+FPT02:
+; Mini ROM set
+	print	NoAnalyze
+	ld	a,5
+	ld	(DMAP),a	; Minirom
+	jr	DTME22
+
+DTME21:
+	xor	a
+	ld	(SRSize),a
+
+DTME22:
+	ld	a,(F_V)
+	or	a
+	jr	z,DTME23
+
+; print bitmask
+	ld	a,(BMAP+1)
+	call	HEXOUT
+	ld	a,(BMAP)
+	call	HEXOUT	
+	ld	e," "
+	ld	c,_CONOUT
+	call	DOS
+
+DTME23:	ld	a,(DMAP)
 	ld	b,a
 	call	TTAB
 	inc	hl
@@ -737,6 +843,10 @@ DTME1:
 	ld	a,(SRSize)
 	and	#0F
 	jp	nz,DE_F1	; not confirm the type mapper
+
+	ld	a,(F_A)
+	or	a
+	jp	nz,DE_F1	; not confirm the type mapper (auto)
 
 	ld	a,(DMAP)
 	or	a
@@ -1037,7 +1147,7 @@ Csm01:
 ; 
 	ld	a,(ix+1)	;ROMJT1 (#8000)
 	or	a
-	jr	nz,Csm02	
+	jr	z,Csm02	
 Csm03:	ld	a,01		; Copmlex start
 	ld	(Record+#3E),a	; need Reset
 	jp	Csm80
@@ -1052,6 +1162,10 @@ Csm70:
 
 Csm80:
 ; test print Size-start metod
+	ld	a,(F_V)
+	or	a
+	jr	z,Csm81
+
 	print	Strm_S
 	ld	a,(Record+#3D)
 	call	HEXOUT
@@ -1066,7 +1180,7 @@ Csm80:
 ; Search free space in flash
 
 
-	ld	a,(Record+#3D)
+Csm81:	ld	a,(Record+#3D)
 	and	#0F
 	jp	z,SFM80		; mapper ROM
 	cp	7
@@ -1079,8 +1193,14 @@ Csm80:
 	ld	h,#40
 	call	ENASLT
 
+	ld	a,(F_V)
+	or	a
+	jp	z,SFM80
+
 	print	NFNR_S
+
 	jr	SFM80
+
 SFM01:
 ;find
 	ld	e,a
@@ -1090,10 +1210,13 @@ SFM01:
 	ld	h,#40
 	call	ENASLT
 
+	ld	a,(F_V)
+	or	a
+	jr	z,SFM01A
 
 	print	FNRE_S
-	pop	de
 
+	pop	de
 	push	de
 	ld	a,d		; print N Record
 	call	HEXOUT
@@ -1111,6 +1234,8 @@ SFM01:
 	ld	a,e		; print N Bank
 	call	HEXOUT
 	print	CRLF_S
+
+SFM01A:
 	pop	de
 
 ;	pop	af	;?
@@ -1154,8 +1279,13 @@ SFM80:
 
 ; compile BAT table ( 8MB/64kB = 128 )
 	call	CBAT
+	
+	ld	a,(F_V)
+	or	a
+	jr	z,sfm81
 	print	QQ
 	call	PRBAT
+sfm81:
 ; Size  - size file 4 byte
 ; 
 ; calc blocks len
@@ -1212,6 +1342,10 @@ DEFMR1:
 
 
 ; Control print
+	ld	a,(F_V)
+	or	a
+	jr	z,DEF09
+
 	print	FFFS_S
 	ld	a,(Record+02)
 	call	HEXOUT
@@ -1244,13 +1378,17 @@ DEF08:	call	CmprDIR
 DEF06:	
 	ld	(Record),a	; save DIR number
 ; control print
+	ld	a,(F_V)
+	or	a
+	jr	z,DEF06A
+
 	print	FDE_S
 	ld	a,(Record)
 	call	HEXOUT
 	print	ONE_NL_S
 
 ; Filename -> Record name
-	ld	a," "
+DEF06A:	ld	a," "
 	ld	bc,30-1
 	ld	de,Record+06
 	ld	hl,Record+05
@@ -1276,8 +1414,13 @@ DEF12:
 	pop	hl
 	inc	hl
 	djnz	DEF12
+
+	ld	a,(F_A)
+	or	a
+	jr	nz,DEF10	; Flag automatic confirm
 	print	ONE_NL_S
 	print	NR_L_S
+
 	ld	a,30
 	ld	(BUFFER),a
 	ld	c,_BUFIN
@@ -1300,6 +1443,9 @@ DEF12:
 	ldir
 	jr	DEF13
 DEF10:
+	ld	a,(F_A)
+	or	a
+	jr	nz,DEF11
 	print	LOAD_S
 DEF10A:
 	ld	c,_INNOE
@@ -1312,6 +1458,9 @@ DEF10A:
 DEF11:
 	print	ONE_NL_S
 	call	LoadImage
+	ld	a,(F_A)
+	or	a
+	jp	nz,Exit		; automatic exit
 	jp	MainM
 
 
@@ -1448,7 +1597,7 @@ Fpr03:	ld	(C8k),hl	; save Counter 8kB blocks
 
 Fpr02:	
 
-; !!!! 8kb file load fix by Alexey !!!!
+; !!!! file attribute kostyl (fix) by Alexey !!!!
 	ld	a,(FCB+#11)
 	cp	#20
 	jr	nz,Fpr02a
@@ -1457,7 +1606,7 @@ Fpr02:
 	jr	nz,Fpr02a
 	dec	a
 	ld	(FCB+#0D),a
-; !!!! 8kb file load fix by Alexey !!!!
+; !!!! file attribute kostyl (fix) by Alexey !!!!
 
 ;load portion from file
 Fpr02a:	ld	c,_RBREAD
@@ -2111,7 +2260,9 @@ BCLM2:  dec     b
 	jr	z,BCLNS		; No Detect
 ; print slot table
 	ld	(ERMSlt),a	; save first detect slot
-	print Findcrt_S
+
+	print	Findcrt_S
+
 BCLT1:	ld	a,(ix)
 	cp	#FF
 	jr	z,BCLTE
@@ -2137,14 +2288,21 @@ BCLT2:	ld	e," "
 	jr	BCLT1
 
 BCLTE:
-	print FindcrI_S
+	ld	a,(F_A)
+	or	a
+	jr	nz,BCTSF 	; Automatic flag (No input slot)
+	print	FindcrI_S
 	jp	BCLNE
 BCLNS:
-;
 	print	NSFin_S
+	jp	BCLNE1
 BCLNE:
+	ld	a,(F_A)
+	or	a
+	jr	nz,BCTSF 	; Automatic flag (No input slot)
+
 ; input slot number
-	ld	de,Binpsl
+BCLNE1:	ld	de,Binpsl
 	ld	c,_BUFIN
 	call	DOS
 	ld	a,(Binpsl+1)
@@ -2226,6 +2384,10 @@ Trp01:	rrc	a
 Trp02:	call	HEXOUT	
 	print	CRLF_S
 
+	ld	a,(F_V)
+	or	a
+	jr	z,Trp02a
+
 	print	MfC_S
 	ld	a,(Det00)
 	call	HEXOUT
@@ -2251,7 +2413,7 @@ Trp02:	call	HEXOUT
 	call	HEXOUT
 	print	CRLF_S
 
-	ld	a,(Det00)
+Trp02a:	ld	a,(Det00)
 	cp	#20
 	jr	nz,Trp03	
 	ld	a,(Det02)
@@ -2291,10 +2453,17 @@ Trp04:	ld	c,_CONOUT
 	ld	a,(Det06)
 	cp	80
 	jp	c,Trp11		
+
+	ld	a,(F_V)
+	or	a
+	ret	z
 	print	EMBF_S
 	xor	a
 	ret
 Trp11:
+	ld	a,(F_V)
+	or	a
+	ret	z
 	print	EMBC_S	
 	xor	a
 	ret	
@@ -2969,13 +3138,16 @@ E_RD1:
 	print	FL_erd_S
 	jr	E_RD0
 
-E_RD4:	ld	de,(BUFFER)	; !!! Added by Alexey !!!
+E_RD4:
+; !!!! no delete first entry kostyl (fix) by Alexey !!!!
+	ld	de,(BUFFER)
 	xor	a
 	add	a,d
 	add	a,e
 	or	a
 	or	a		; first entry? (SCC)
 	jr	z,E_RD0		; don't delete!!
+; !!!! no delete first entry kostyl (fix) by Alexey !!!!
 
 	print	QDOR_S		; ask to delete
 
@@ -3194,7 +3366,7 @@ rdt18	ld	(hl),a
 	ldir
 	jp	Redit	
 rdt20:
-; preset type cartrige
+; preset type cartridge
 ;	print	CLS_S
 	call	CLRSCR
 	print	PTC_S
@@ -3686,7 +3858,7 @@ rdte08:
 	ld	e,(iy+9)	; next element (right)
 	ld	a,(iy+4)
 	cp	2
-	jr	nz,rdte06	; no type cartride
+	jr	nz,rdte06	; no type cartridge
 	ld	a,(hl)
 	cp	20		; special symbol ?
 	jr	nc,rdte0A	
@@ -4687,26 +4859,130 @@ KEYON:	ld	ix, #00CF
 	ld	iy,0
 	call	CALLSLT		; set screen 0
 	ret
+;F_Key:
+; input DE - key string pointer
+; output A 1-finded, 0-not finded
+;	ld	hl,#80
+;
+;fkey4:
+;	push	de
+;fkey5:	ld	a,(de)
+;	or	a
+;	jr	z,fkey1		; succ
+;	ld	b,a
+;	ld	a,(hl)
+;	or	a
+;	jr	z,fkey2		; fail
+;	and	%11011111
+;	cp	b
+;	jr	nz,fkey3	; not compare
+;	inc	de
+;	inc	hl
+;	jr	fkey5
+;
+;fkey3:	pop	de		; reset de
+;	inc	hl		; next hl
+;	jr	fkey4
+;fkey1:
+;	pop	de
+;	inc	a		; 1
+;	ret
+;fkey2:
+;	pop	de
+;	ret			; 0
+
+F_Key:
+; input A - Num parametr
+; Output C,Z Flags, set key variable
+;	ld	a,1
+
+	ld	de,BUFFER
+	call	EXTPAR
+	ret	c		; no parametr C- Flag
+	ld	hl,BUFFER
+	ld	a,(hl)
+fkey01:	cp	"/"
+	ret	nz		; no Flag NZ - Flag
+	inc	hl
+	ld	a,(hl)
+	and	%11011111
+	cp	"S"
+	jr	nz,fkey02
+	inc	hl
+	ld	a,(hl)
+	and	%11011111
+	cp	"U"
+	jr	nz,fkey02
+	inc	hl
+	ld	a,(hl)
+	or	a
+	jr	nz,fkey02
+	ld	a,1
+	ld	(F_SU),a
+	ret
+fkey02:	ld	hl,BUFFER+1
+	ld	a,(hl)
+	and	%11011111
+	cp	"A"
+	jr	nz,fkey03
+	inc	hl
+	ld	a,(hl)
+	or	a
+	jr	nz,fkey03
+	ld	a,2
+	ld	(F_A),a
+	ret
+fkey03:	ld	hl,BUFFER+1
+	ld	a,(hl)
+	and	%11011111
+	cp	"V"
+	jr	nz,fkey04
+	inc	hl
+	ld	a,(hl)
+	or	a
+	jr	nz,fkey04
+	ld	a,3
+	ld	(F_V),a
+	ret
+fkey04:
+	xor	a
+	dec	a		; S - Illegal flag
+	ret
 
 
 	
 PRESENT_S:
 	db	3
 	db	"FlashROM Manager for Carnivore SCC v1.0",13,10
-	db	"(C) 2015-2016 RBSC. All rights reserved.",13,10,13,10,"$"
+	db	"(C) 2015-2016 RBSC. All rights reserved",13,10,13,10,"$"
 NSFin_S:
 	db	"Carnivore cartridge was not found. Please specify its slot number - $"
 Findcrt_S:
-	db	"Found Carnivore cartrigde in slot(s): $"
+	db	"Found Carnivore cartridge in slot(s): $"
 FindcrI_S:
-	db	13,10,"Press ENTER for the found slot or specify a new slot number - $"
+	db	13,10,"Press ENTER for the found slot or input new slot number - $"
 DESCR:	db	"CSCCFRC"
-USEDOS2_S:
-	db	"*** Please use DOS2! *** "
+;USEDOS2_S:
+;	db	"*** DOS2 has been detected ***",10,13
 CRLF_S:	db	13,10,"$"
-SltN_S:	db	13,10,13,10,"Using slot - $"
+SltN_S:	db	13,10,"Using slot - $"
+I_FLAG_S:
+	db	"Incorrect flag!",13,10,13,10,"$"
+I_PAR_S:
+	db	"Incorrect parameter!",13,10,13,10,"$"
+I_MPAR_S:
+	db	"Too many parameters!",13,10,13,10,"$"
+H_PAR_S:
+	db	"Usage:",13,10,13,10
+	db	" canfm [filename.rom] [/v] [/a] [/su]",13,10,13,10
+	db	"Command line options:",13,10
+	db	" /v  - Verbose mode (show more information)",13,10
+	db	" /a  - Autodetect and flash ROM image (no user interaction)",13,10
+	db	" /su - Enable Super User mode",13,10
+	db	"       (allows editing all registers = RISKY!!!)",10,13,"$"
+
 M29W640:
-        db      "Detected: M29W640G$"
+        db      "Flash chip detected: M29W640G$"
 NOTD_S:	db	13,10,"Flash chip's type is not detected!",13,10
 	db	"This cartridge is not open for writing or may be defective!",13,10
 	db	"Try to reboot and hold down F5 key...",13,10 
@@ -4723,16 +4999,16 @@ MAIN_S:	db	13,10
 	db	"Main Menu",13,10
 	db	"---------",13,10
 	db	" 1 - Flash new ROM image",13,10
-	db	" 2 - Browse ROM image directory",13,10
+	db	" 2 - Browse/edit ROM image directory",13,10
 	db	" 8 - Cartridge's service utilites",13,10
-	db	" 0 - Exit",13,10,"$"
+	db	" 0 - Exit to DOS",13,10,"$"
 
 UTIL_S:	db	13,10
 	db	"Service Menu",13,10
 	db	"------------",13,10
 	db	" 1 - Compress directory entries",13,10
 	db	" 2 - Initialize directory (erase all)",13,10
-	db	" 3 - Flash new Boot Block (bootcscc.bin)",13,10
+	db	" 3 - Write Boot Block (bootcscc.bin)",13,10
 	db	" 4 - Show flash chip's block usage map",13,10
 	db	" 0 - Return to the main menu",13,10,"$"
 DirComr_S:
@@ -4766,14 +5042,13 @@ NoAnalyze:
 MROMD_S:
 	db	"ROM's file size: $" 
 CTC_S:	db	"Do you confirm this mapper type? (y/n)",10,13,"$"
-CoTC_S:	db	"Manual mapper type selection:",13,10,"$"
+CoTC_S:	db	10,13,"Manual mapper type selection:",13,10,"$"
 Num_S:	db	"Your selection - $"
 FileOver_S:
-	db	"The file is too large or there's no free space on the flash chip!",13,10,"$"
-MRSQ_S:	db	"The ROM's size's between 32kb and 64kb. Create Mini ROM entry? (y/n)",13,10,"$"
+	db	"File is too big or there's no free space on the flash chip!",13,10,"$"
+MRSQ_S:	db	10,13,"The ROM's size is between 32kb and 64kb. Create Mini ROM entry? (y/n)",13,10,"$"
 Strm_S:	db	"MMROM-CSRM: $"
-NFNR_S:	db	"Unable to find free entries in the existing Multi ROM entries",#0D,#0A
-	db	"A new 64kb memory block will be allocated for this ROM",#0A,#0D,"$"
+NFNR_S:	db	"No free Multi ROM entries found. A new 64kb block will be allocated",#0A,#0D,"$"
 FNRE_S:	db	"Using Record-FBlock-NBank for Mini ROM",#0D,#0A
 	db	"[Multi ROM entry] - $"
 DirOver_S:
@@ -4782,7 +5057,7 @@ DirCmpr:db	"Compress directory entries? (y/n)",13,10,"$"
 FFFS_S:	db	"Found free space at: $"
 FDE_S:	db	"Found free directory entry at: $"
 NR_I_S:	db	"Name of directory entry: $"
-NR_L_S: db	"Press ENTER to confirm or input a new name of directory entry:",13,10,"$"
+NR_L_S: db	"Press ENTER to confirm or input a new name below:",13,10,"$"
 FLEB_S:	db	"Erasing flash chip's block(s) - $"
 FLEBE_S:db	"Error erasing flash chip's block(s)!",13,10,"$"
 LFRI_S:	db	"Flashing ROM image, please wait...",13,10,"$"
@@ -4805,14 +5080,16 @@ TWO_NL_S:	db	13,10
 ONE_NL_S:	db	13,10,"$"
 CLS_S:		db	27,"E$"
 CLStr_S:	db	27,"K$"
-INVPAR_S:	db	"*** Invalid parameter(s)",13,10,"$"
-QDOR_S	db	#0D,#0A,"Delete original entry? (y/n)$"
+;INVPAR_S:	db	"*** Invalid parameter(s)",13,10,"$"
+QDOR_S:	db	#0D,#0A,"Delete original entry? (y/n)$"
+MD_Fail:
+	db	"FAILED...",13,10,"$"
 
 MAP_E_SCC:
 	db	#00,#FF,00,00,"S"
 	db	"Konami SCC sound cartridge    "
 ;	db	#F8,#50,#00,#8C,#3F,#40	
-	db	 #F8,#50,#00,#85,#3F,#40	; corr
+	db	#F8,#50,#00,#85,#3F,#40		; corr
 	db	#F8,#70,#01,#8C,#3F,#60		
 	db      #F8,#90,#02,#8C,#3F,#80		
 	db	#F8,#B0,#03,#8C,#3F,#A0	
@@ -5373,11 +5650,11 @@ H6hMult	db	"> Mirror on Bank num.overrun$"
 H5hMult	db	"> Select RAM for Bank$"
 H4hMult	db	"> Make Bank writeable$"
 H3hMult	db	"> Disable Bank$"
-H2hMult	db	"] 111 - 64kb, 110 - 32kb$"
-H1hMult	db	"] 101 - 16kb, 100 - 8kb$"
-H0hMult	db	"] 000 - bank is disabled$"
+H2hMult	db	"] 111-64kb, 110-32kb$"
+H1hMult	db	"] 101-16kb, 100-8kb$"
+H0hMult	db	"] 000-bank is disabled$"
 
-H7CMDR	db	"> Disable card.contr.regist.$"		;???????????
+H7CMDR	db	"> Disable card.contr.regist.$"
 H6CMDR	db	"] C.c.register base: 00-0F80$"
 H5CMDR	db	"] 01-4F80, 10-8F80, 11-CF80$"
 H4CMDR	db	"> Enable Konami SCC sound$"
@@ -5392,13 +5669,13 @@ H5MMRD	db	"] 000-0, 001-1, 010-2, 011-3$"
 H4MMRD	db	"] 100-4, 101-5, 110-6, 111-7$"
 H3MMRD	db	"> 1-48kb ROM, 0-other size$"
 H2MMRD	db	"] ROM size: 000-not Mini ROM$"
-H1MMRD	db	"] 111 - 64kb, 110 - 32/48kb$" 
-H0MMRD	db	"] 101 - 16kb, 100 - 8kb$"
+H1MMRD	db	"] 111-64kb, 110-32/48kb$" 
+H0MMRD	db	"] 101-16kb, 100-8kb$"
 
 H3SRo	db	"> Jump addr: 0-bit 2, 1-0002$"
 H2SRo	db	"> Jump addr: 0-4002, 1-8002$"
-H1SRo	db	"> ROM start: 0 - no, 1 - yes$"
-H0SRo	db	"> Reset MSX: 0 - no, 1 - yes$"
+H1SRo	db	"> ROM start: 0-no, 1-yes$"
+H0SRo	db	"> Reset MSX: 0-no, 1-yes$"
 
 BM_S1	db	"Bank1:$"
 BM_S2	db	"Bank2:$"
@@ -5414,7 +5691,7 @@ GHME:	db	"Use cursor keys to select the values",#0D,#0A
 	db	"Use [ESC] to exit$"
 HEMPT	db	"$"
 Hprot	db	"This element can't be edited!",#0D,#0A
-	db	"You need to enable special access mode!$"
+	db	"You need to enable Super User mode!$"
 HRecN	db	"ACT - Record active flag",#0D,#0A
 	db	"#FF - empty entry, #XX - entry number$"
 HPSV:	db	"PSV - Delete flag",13,10
@@ -5453,7 +5730,7 @@ ENNR_S:	db	"Enter new entry name:",#0D,#0A,"$"
 SAE_S:	db	"Save and exit? (y/n)$"
 PTC_S:	db	"Select preset register configuration:$"
 PTCUL_S:
-	db	"> Load register preset from a .CPC file$"
+	db	"> Load register preset from .CPC file$"
 PTCE_S:
 	db	"> Exit [ESC]$"
 SSM_S:	db	"Select ROM's starting method :$"
@@ -5465,7 +5742,7 @@ ssa01:	db	"> #0000$"
 ssa02:	db	"> #4000$"
 ssa03:	db	"> #8000$"
 SSR_S:	db	"Select ROM's size:$"
-ssrMAP:	db	"64kb or more - mapper type needs to be set!$"
+ssrMAP:	db	"64kb or more (mapper is required)$"
 ssr64:	db	"64kb$"
 ssr48:	db	"48kb$"
 ssr32:	db	"32kb$"
@@ -5532,6 +5809,12 @@ ROMJT2:	db	0
 ROMJI0:	db	0
 ROMJI1:	db	0
 ROMJI2:	db	0
+; /-flags parametr
+F_H	db	0
+F_SU	db	0
+F_A	db	0
+F_V	db	0
+p1e	db	0
 
 ZiroB:	db	0
 BUFFER:	ds	256
