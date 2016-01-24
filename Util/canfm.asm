@@ -1,7 +1,7 @@
 ;
 ; Carnivore SCC Cartridge's FlashROM Manager
 ; Copyright (c) 2015-2016 RBSC
-; Version 1.0
+; Version 1.1
 ;
 
 ;--- Macro for printing a $-finished string
@@ -83,10 +83,15 @@ _DIRIO:	equ	#06	;Direct console I/O
 _INNOE:	equ	#08	;Console input without echo
 _STROUT:	equ	#09	;String output
 _BUFIN:	equ	#0A	;Buffered line input
+
 _CONST:	equ	#0B	;Console status
 _FOPEN: equ	#0F	;Open file
 _FCLOSE	equ	#10	;Close file
+_FSEARCHF	equ	#11	;File Search First
+_FSEARCHN	equ	#12	;File Search Next
+_FCREATE	equ	#16	;File Create
 _SDMA:	equ	#1A	;Set DMA address
+_RBWRITE	equ	#26	;Random block write
 _RBREAD:	equ	#27	;Random block read
 _TERM:	equ	#62	;Terminate with error code
 _DEFAB:	equ	#63	;Define abort exit routine
@@ -1454,6 +1459,8 @@ DEF10A:
 	jr	z,DEF11
 	cp	"n"
 	jp	z,MainM
+	cp	"e"
+	jr	z,EditCf
 	jr	DEF10A
 DEF11:
 	print	ONE_NL_S
@@ -1462,8 +1469,25 @@ DEF11:
 	or	a
 	jp	nz,Exit		; automatic exit
 	jp	MainM
-
-
+EditCf:
+	ld	hl,Record
+	ld	a,#FF
+	ld	de,BUFFER
+	ld	(de),a
+	inc	de
+	ld	(de),a
+	inc	de
+	ld	bc,#40
+	ldir
+	call	Redit
+	jr	z,DEF11a
+	ld	hl,BUFFER+2
+	ld	de,Record
+	ld	bc,#40
+	ldir
+DEF11a:
+	print	CLS_S
+	jp	DEF10	
 ;-----------------------------------------------------------------------------
 LoadImage:
 ; Erase block's and load ROM-image
@@ -3184,6 +3208,12 @@ E_RD0:
 
 Redit:
 	push	de
+
+        ld      a,(TPASLOT1)
+        ld      h,#40
+        call    ENASLT
+
+
 ; drawing edit screen
 ;	print	CLS_S
 	call	CLRSCR
@@ -3288,13 +3318,13 @@ rdt11:;UP
 	jr	rdt09
 rdt12:;DOWN
 	ld	a,l
-	cp	7
+	cp	8
 	jr	nc,rdt10
 	inc	l
 	jr	rdt09
 rdt13:;ESC
 	call	CLSM
-	ld	hl,#0105
+	ld	hl,#0106
 	ld	(CSRY),hl
 	print	EWS_S
 	ld	c,_INNOE
@@ -3306,16 +3336,268 @@ rdt13:;ESC
 rdt14:;GO
 	ld	a,l
 	cp	3	; rename
-	jr	z,rdt16
+	jp	z,rdt16
 	cp	4	; preset
 	JP	Z,rdt20
 	cp	5	; edit
 	jp	z,rdte01
-	cp	6
-	jr	z,rdt15 ; save and exit
+	cp	6	; disk operations
+	jp	z,rdt90
 	cp	7
-	jr	z,rdt13 ; quit ws save
+	jp	z,rdt15 ; save and exit
+	cp	8
+	jp	z,rdt13 ; quit ws save
 	jp	rdt10
+
+rdt90:
+	call	CLSM
+	ld	hl,#0103
+	ld	(CSRY),hl
+	print	D_RO
+
+	ld	hl,#0103
+	ld	de,#0200
+	call	SELM
+	cp	0
+	jr	z,rdt91	;load cpc
+	cp	1
+	jp	z,rdt92 ;save cpc
+	jp	Redit
+rdt91:			;load
+;	call	CLSM
+	ld	hl,#0107
+	ld	(CSRY),hl
+	print	D_LO
+	call	getcpcn
+	jp	z,Redit
+	ld	de,FCB2
+	ld	c,_FOPEN
+	call	DOS
+	or	a
+	jr	z,rdt911
+	
+	print	F_NOT_FS
+	ld	c,_INNOE
+	call	DOS
+
+	jp	Redit
+rdt911:
+
+	ld      hl,1
+	ld      (FCB2+14),hl     ; Record size = 1 byte
+
+	ld	de,CPC_B
+	ld	c,_SDMA
+	call	DOS
+
+	ld	hl,30
+	ld	de,FCB2
+	ld	c,_RBREAD
+	call	DOS
+	or	a
+	jr	z,rdt912
+
+	print	FR_ERS
+	ld	c,_INNOE
+	call	DOS
+
+	jp	rdt999
+rdt912:
+	ld	hl,CPC_B
+	ld	a,(hl)
+	ld	(BUFFER+2+#04),a
+	inc	hl
+	ld	de,BUFFER+2+#23
+	ld	bc,30-1
+	ldir
+
+	print	F_LOD_OK	; print loading OK
+	ld	c,_INNOE
+	call	DOS
+
+	jp	rdt999		;close
+
+rdt92:			; save
+;	call	CLSM
+	ld	hl,#0107
+	ld	(CSRY),hl
+	print	D_SO
+	call	getcpcn
+	jp	z,Redit
+; test exist file
+	ld	de,FCB2
+	ld	c,_FSEARCHF	;Search First File
+	call	DOS
+	or	a
+	jr	nz,rdt921	; file not found
+
+	print	F_EXIST_S
+rdt922:	ld	c,_INNOE
+	call	DOS
+	cp	"n"
+	jp	z,Redit
+	cp	"y"
+	jr	nz,rdt922
+	
+rdt921:
+        ld      bc,24           ; Prepare the FCB
+        ld      de,FCB2+13
+        ld      hl,FCB2+12
+        ld      (hl),b
+        ldir 
+
+	ld	de,FCB2
+	ld	c,_FCREATE
+	call	DOS
+	or	a
+	jr	z,rdt923
+	print	FR_ERC_S
+	ld	c,_INNOE
+	call	DOS
+	jp	Redit
+rdt923:
+	ld      hl,1
+	ld      (FCB2+14),hl     ; Record size = 1 byte
+
+	ld	a,(BUFFER+2+#04)
+	ld	de,CPC_B
+	ld	(de),a
+	ld	hl,BUFFER+2+#23
+	inc	de
+	ld	bc,30-1
+	ldir
+
+	ld	de,CPC_B
+	ld	c,_SDMA
+	call	DOS
+
+	ld	hl,30
+	ld	de,FCB2
+	ld	c,_RBWRITE
+	call	DOS
+	or	a
+	jp	z,rdt998
+
+	print	FR_ERW_S
+	ld	c,_INNOE
+	call	DOS
+
+	jp	rdt999
+
+rdt998:
+	print	F_SAV_OK	; print saving OK
+	ld	c,_INNOE
+	call	DOS
+
+rdt999:
+	ld	de,FCB2
+	ld	c,_FCLOSE
+	call	DOS
+	jp	Redit
+getcpcn:
+;Bi_FNAM
+	ld	de,Bi_FNAM
+	ld	c,_BUFIN
+	call	DOS
+	ld	a,(Bi_FNAM+1)
+	or	a
+	ret	z
+
+	ld	hl,CPCFN
+	ld	de,FCB2
+	ld	bc,8+3+1
+	ldir
+
+	ld	a,(Bi_FNAM+1)
+	ld	b,a
+	ld	c,8
+	ld	hl,Bi_FNAM+2
+	ld	de,FCB2+1
+	ld	a,(Bi_FNAM+3)
+	cp	":"
+	jr	nz,gcn01	; no drive letter
+	ld	a,(hl)
+	and	%11011111
+	sub	"A"-1
+	ld	(FCB2),a
+	inc	hl
+	inc	hl
+	dec	b
+	ret	z
+	dec	b
+	ret	z
+gcn01:
+	ld	a,(hl)
+	cp	"."
+	jr	z,gcn03		; ext fn detected
+	ld	(de),a
+	inc	hl
+	inc	de
+	dec	b
+	jr	z,gcn02
+	dec	c
+	jr	nz,gcn01
+	
+gcn05	ld	a,(hl)
+	cp	"."
+	jr	z,gcn03
+	inc	hl
+	dec	b
+	jr	nz,gcn05
+	jr	gcn02
+gcn03:
+	ld	de,FCB2+1+8
+	inc	hl
+	ld	a," "
+	ld	(FCB2+1+8),a
+	ld	(FCB2+1+8+1),a
+	ld	(FCB2+1+8+2),a
+	ld	c,3
+gcn04:	dec	b
+	jr	z,gcn02
+	ld	a,(hl)
+	ld	(de),a
+	inc	hl
+	inc	de
+	dec	c
+	jr	nz,gcn04
+
+gcn02:
+	print	CPC_FNM
+        ld      bc,24           ; Prepare the FCB
+        ld      de,FCB2+13
+        ld      hl,FCB2+12
+        ld      (hl),b
+        ldir 
+; control print
+; !!! Commented out by Alexey, file name will be output after string CPCFNF
+;	ld	e,#0D
+;	ld	c,_CONOUT
+;	call	DOS
+;	ld	e,#0A
+;	ld	c,_CONOUT
+;	call	DOS
+;	ld	a,(FCB2)
+;	add	a,"A"-1
+;	ld	e,a
+;	ld	c,_CONOUT
+;	call	DOS
+; !!! Commented out by Alexey, file name will be output after string CPCFNF
+	ld	hl,FCB2+1
+	ld	b,8+3
+gcn06:	push	hl
+	push	bc
+	ld	e,(hl)
+	ld	c,_CONOUT
+	call	DOS
+	pop	bc
+	pop	hl
+	INC	hl
+	djnz	gcn06
+;
+	ld	a,1
+	or	a
+	ret
 
 rdt15:;Save end exit (save late)
 	call	CLSM
@@ -3429,7 +3711,7 @@ rdt22:;UP
 	jr	c,rdt27
 	dec	l
 	jr	rdt24
-rdt23:;DWON
+rdt23:;DOWN
 	ld	a,l
 	cp	4+6
 	jr	nc,rdt27
@@ -3456,8 +3738,11 @@ rdt25:;GO
 	ld	hl,CRTT5
 	jr	z,rdt30
 	cp	9		; load from file
-
+	jr	z,rdt302
 	jp	Redit
+
+
+
 rdt30:;copy set
 	ld	a,(hl)
 	ld	(BUFFER+2+4),a
@@ -3466,6 +3751,59 @@ rdt30:;copy set
 	ld	de,BUFFER+2+#23
 	ld	bc,#40-#23
 	ldir 
+	jr	rdt301
+
+rdt302:
+	ld	hl,#010C
+	ld	(CSRY),hl	
+	print	D_LO
+
+	call	getcpcn
+	jp	z,Redit
+	ld	de,FCB2
+	ld	c,_FOPEN
+	call	DOS
+	jr	z,rdt303
+
+	print	F_NOT_FS
+	ld	c,_INNOE
+	call	DOS
+
+	jp	Redit
+rdt303:	ld      hl,1
+	ld      (FCB2+14),hl     ; Record size = 1 byte
+	ld	de,CPC_B
+	ld	c,_SDMA
+	call	DOS
+	ld	hl,30
+	ld	de,FCB2
+	ld	c,_RBREAD
+	call	DOS
+	or	a
+	jr	z,rdt304
+
+	print	FR_ERS
+	ld	c,_INNOE
+	call	DOS
+
+	jp	rdt999
+
+rdt304:	ld	hl,CPC_B
+	ld	a,(hl)
+	ld	(BUFFER+2+#04),a
+	inc	hl
+	ld	de,BUFFER+2+#23
+	ld	bc,30-1
+	ldir
+	ld	de,FCB2
+	ld	c,_FCLOSE
+	call	DOS
+
+	print	F_LOD_OK
+	ld	c,_INNOE
+	call	DOS
+
+rdt301:
 ; select start metod
 ;	print	CLS_S	
 	call	CLRSCR
@@ -5029,10 +5367,24 @@ OpFile_S:
 	db	10,13,"Opening file: ","$"
 F_NOT_F_S:
 	db	"File not found!",13,10,"$"
+F_NOT_FS:
+	db	13,10,"File not found!$"
+F_LOD_OK:
+	db	13,10,"Preset was loaded successfully!$"
+F_SAV_OK:
+	db	13,10,"Preset was saved successfully!$"
 FSizE_S:
 	db	"File size error!",13,10,"$"
 FR_ER_S:
 	db	"File read error!",13,10,"$"
+FR_ERS:
+	db	13,10,"File read error!","$"
+FR_ERW_S:
+	db	13,10,"File write error!","$"
+FR_ERC_S:
+	db	13,10,"File create error!","$"
+F_EXIST_S:
+	db	13,10,"File already exists, overwrite? (y/n)$"
 Analis_S:
 	db 	"Detecting ROM's mapper type: $"
 SelMapT:
@@ -5074,7 +5426,7 @@ CRD_S:	db	"Directory Editor - Press [ESC] to exit",10,13
 RDELQ_S:
 	db	" - Delete this entry? (y/n)$"
 NODEL:	db	"Entry can't be deleted! Press any key...$"
-LOAD_S:	db	"Ready to flash the ROM, proceed? (y/n)$"
+LOAD_S:	db	"Ready to flash the ROM, proceed or edit entry (y/n/e)?$"
 QQ:	db	"Map of flash chip blocks:$"
 TWO_NL_S:	db	13,10
 ONE_NL_S:	db	13,10,"$"
@@ -5099,37 +5451,37 @@ MAP_E_SCC:
 CARTTAB: ; (N x 64 byte) 
 	db	"U"					;1
 	db	"Unknown mapper type              $"	;34
-	db	#F8,#50,#00,#84,#3F,#40			;6
-	db	#F8,#70,#01,#84,#3F,#60			;6	
-	db      #F8,#90,#02,#84,#3F,#80			;6	
-	db	#F8,#B0,#03,#84,#3F,#A0			;6
+	db	#F8,#50,#00,#84,#FF,#40			;6
+	db	#F8,#70,#01,#84,#FF,#60			;6	
+	db      #F8,#90,#02,#84,#FF,#80			;6	
+	db	#F8,#B0,#03,#84,#FF,#A0			;6
 	db	#FF,#BC,#00,#02,#FF			;5
 
 CRTT1:	db	"k"
 	db	"Konami (Konami 4)                $"
-	db	#E8,#50,#00,#04,#3F,#40			
-	db	#E8,#60,#01,#84,#3F,#60				
-	db      #E8,#80,#02,#84,#3F,#80				
-	db	#E8,#A0,#03,#84,#3F,#A0			
+	db	#E8,#50,#00,#04,#FF,#40			
+	db	#E8,#60,#01,#84,#FF,#60				
+	db      #E8,#80,#02,#84,#FF,#80				
+	db	#E8,#A0,#03,#84,#FF,#A0			
 	db	#FF,#AC,#00,#02,#FF
 CRTT2:	db	"K"
 	db	"Konami SCC (Konami 5)            $"
-	db	#F8,#50,#00,#84,#3F,#40			
-	db	#F8,#70,#01,#84,#3F,#60				
-	db      #F8,#90,#02,#84,#3F,#80				
-	db	#F8,#B0,#03,#84,#3F,#A0			
+	db	#F8,#50,#00,#84,#FF,#40			
+	db	#F8,#70,#01,#84,#FF,#60				
+	db      #F8,#90,#02,#84,#FF,#80				
+	db	#F8,#B0,#03,#84,#FF,#A0			
 	db	#FF,#BC,#00,#02,#FF
 CRTT3:	db	"a"
 	db	"ASCII 8 bit                      $"
-	db	#F8,#60,#00,#84,#3F,#40			
-	db	#F8,#68,#01,#84,#3F,#60				
-	db      #F8,#70,#02,#84,#3F,#80				
-	db	#F8,#78,#03,#84,#3F,#A0			
+	db	#F8,#60,#00,#84,#FF,#40			
+	db	#F8,#68,#01,#84,#FF,#60				
+	db      #F8,#70,#02,#84,#FF,#80				
+	db	#F8,#78,#03,#84,#FF,#A0			
 	db	#FF,#AC,#00,#02,#FF
 CRTT4:	db	"A"
 	db	"ASCII 16 bit                     $"		
-	db	#F8,#60,#00,#85,#7F,#40			
-	db	#F8,#70,#01,#85,#7F,#80				
+	db	#F8,#60,#00,#85,#FF,#40			
+	db	#F8,#70,#01,#85,#FF,#80				
 	db      #F8,#70,#02,#08,#3F,#80				
 	db	#F8,#78,#03,#08,#3F,#A0			
 	db	#FF,#8C,#00,#01,#FF
@@ -5142,6 +5494,73 @@ CRTT5:	db	"M"
 	db	#FF,#8C,#07,#01,#FF
 	
 	db	0
+
+
+;variable
+protect:
+	db	1
+DOS2:	db	0
+ERMSlt	db	1
+TRMSlt	db	#FF,#FF,#FF,#FF,#FF,#FF,#FF,#FF,#FF
+Binpsl	db	2,0,"1",0
+slot:	db	1
+cslt:	db	0
+Det00:	db	0
+Det02:	db	0
+Det1C:	db	0
+Det1E:	db	0
+Det06:	db	0
+;Det04:	ds	134
+DMAP:	db	0
+DMAPt:	db	1
+BMAP:	ds	2
+Dpoint:	db	0,0,0
+StartBL: ds	2
+C8k:	dw	0
+PreBnk:	db	0
+EBlock0: db	0
+EBlock:	db	0
+strp:	db	0
+strI:	dw	#8000
+BootFNam:
+	db	0,"BOOTCSCCBIN"
+Bi_FNAM db	14,0,"D:FileName.ROM",0
+;--- File Control Block
+FCB:	db	0
+	db	"           "
+	ds	28
+FILENAME: db    "                                $"
+Size:	db 0,0,0,0
+BAT:	; BAT table ( 8MB/64kB = 128 )
+	ds	128	
+Record:	ds	#40
+SRSize:	db	0
+multi	db	0
+ROMABCD:	db	0
+ROMJT0:	db	0
+ROMJT1:	db	0
+ROMJT2:	db	0
+ROMJI0:	db	0
+ROMJI1:	db	0
+ROMJI2:	db	0
+; /-flags parametr
+F_H	db	0
+F_SU	db	0
+F_A	db	0
+F_V	db	0
+p1e	db	0
+
+ZiroB:	db	0
+BUFFER:	ds	256
+
+
+
+	db	0,0,0
+
+
+; level over #4000
+
+
 Temdi:
 ;1 N elem
 	db	13,1	; 0,1 - Y,X screen location 
@@ -5723,14 +6142,23 @@ M_CTS:
 M_CT01:	db	"> Rename entry",#0D,#0A
 M_CT02:	db	"> Select preset configuration",#0D,#0A
 M_CT03:	db	"> Edit configuration registers",#0D,#0A
+M_CT031	db	"> Save/load register preset",#0D,#0A
 M_CT04:	db	"> Save and exit",#0D,#0A
 M_CT05:	db	"> Quit without saving [ESC]",#0D,#0A,"$"
 EWS_S:	db	"Quit without saving? (y/n)$"
 ENNR_S:	db	"Enter new entry name:",#0D,#0A,"$"
 SAE_S:	db	"Save and exit? (y/n)$"
+D_RO:	db	"> Load register preset file",#0D,#0A
+	db	"> Save register preset file",#0D,#0A
+	db	"> Return to editor$"
+D_LO	db	"Input file name for loading: $"
+D_SO	db	"Input file name for saving: $"
+CPC_FNM:
+	db	10,13,"Preset file name: $"
+
 PTC_S:	db	"Select preset register configuration:$"
 PTCUL_S:
-	db	"> Load register preset from .CPC file$"
+	db	"> Load register preset from file$"
 PTCE_S:
 	db	"> Exit [ESC]$"
 SSM_S:	db	"Select ROM's starting method :$"
@@ -5762,60 +6190,20 @@ BTbp_S:	db	"   *--------",#0D,#0A
 	db	"   !!!!!!*--$"	
 ;	db	"FF-76543210-"
 
-;variable
-protect:
-	db	1
-DOS2:	db	0
-ERMSlt	db	1
-TRMSlt	db	#FF,#FF,#FF,#FF,#FF,#FF,#FF,#FF,#FF
-Binpsl	db	2,0,"1",0
-slot:	db	1
-cslt:	db	0
-Det00:	db	0
-Det02:	db	0
-Det1C:	db	0
-Det1E:	db	0
-Det06:	db	0
-;Det04:	ds	134
-DMAP:	db	0
-DMAPt:	db	1
-BMAP:	ds	2
-Dpoint:	db	0,0,0
-StartBL: ds	2
-C8k:	dw	0
-PreBnk:	db	0
-EBlock0: db	0
-EBlock:	db	0
-strp:	db	0
-strI:	dw	#8000
-BootFNam:
-	db	0,"BOOTCSCCBIN"
-Bi_FNAM db	14,0,"D:FileName.ROM",0
-;--- File Control Block
-FCB:	db	0
-	db	"           "
+CPCFN:	db	0
+	db	"        CPC"
+FCB2:	
+	db	0
+	db	"        CPC"
 	ds	28
-FILENAME: db    "                                $"
-Size:	db 0,0,0,0
-BAT:	; BAT table ( 8MB/64kB = 128 )
-	ds	128	
-Record:	ds	#40
-SRSize:	db	0
-multi	db	0
-ROMABCD:	db	0
-ROMJT0:	db	0
-ROMJT1:	db	0
-ROMJT2:	db	0
-ROMJI0:	db	0
-ROMJI1:	db	0
-ROMJI2:	db	0
-; /-flags parametr
-F_H	db	0
-F_SU	db	0
-F_A	db	0
-F_V	db	0
-p1e	db	0
+CPC_B:			; 30 byte
+	ds	1	; type descriptor symbol
+	ds	6	; 1 bank
+	ds	6	; 2 bank
+	ds	6	; 3 bank
+	ds	6	; 4 bank
+	ds	5	; rez,CardMDR,MROM,RES,REZ
 
-ZiroB:	db	0
-BUFFER:	ds	256
+	db	0,0,0
+
 BUFTOP:
