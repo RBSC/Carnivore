@@ -2636,6 +2636,7 @@ DCMPR1:	ld	c,_INNOE
 DCMPR2:	call	CmprDIR
 	print	DirComr_E
 	jr	UTIL
+
 CmprDIR:
 ; Compress directory 
 ; Set flash configuration
@@ -3570,7 +3571,7 @@ gcn02:
         ld      (hl),b
         ldir 
 ; control print
-; !!! Commented out by Alexey, file name will be output after string CPCFNF
+; !!! Commented out by Alexey, file name will be output after string "Preset file name:"
 ;	ld	e,#0D
 ;	ld	c,_CONOUT
 ;	call	DOS
@@ -3582,7 +3583,7 @@ gcn02:
 ;	ld	e,a
 ;	ld	c,_CONOUT
 ;	call	DOS
-; !!! Commented out by Alexey, file name will be output after string CPCFNF
+; !!! Commented out by Alexey, file name will be output after string "Preset file name:"
 	ld	hl,FCB2+1
 	ld	b,8+3
 gcn06:	push	hl

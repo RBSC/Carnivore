@@ -1,3 +1,5 @@
+Partslist
+
 C1,C2 - 10uF 10v
 C2 has wrong polarity on board!!!
 
