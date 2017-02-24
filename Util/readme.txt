@@ -52,8 +52,8 @@ How to work with Boot Block
 ---------------------------
 
 The Boot Block allows to start the ROMs from the flash chip and to restart the cartridge with the desired configuration.
-After MSX shows its boot logo, the cartridge's boot block should start and you should see the menu. Navigating the menu is very
-easy. Here are the key assignments:
+After MSX shows its boot logo, the cartridge's boot block should start and you should see the menu. Navigating the menu is
+very easy. Here are the key assignments:
 
  [ESC] - boot MSX using the default configuration
  [LEFT],[RIGHT] - previous/next directory page
