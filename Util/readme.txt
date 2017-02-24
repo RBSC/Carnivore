@@ -55,7 +55,7 @@ The Boot Block allows to start the ROMs from the flash chip and to restart the c
 After MSX shows its boot logo, the cartridge's boot block should start and you should see the menu. Navigating the menu is very
 easy. Here are the key assignments:
 
- [ESC] - boot MSX using the default configuration: all enabled
+ [ESC] - boot MSX using the default configuration
  [LEFT],[RIGHT] - previous/next directory page
  [UP],[DOWN] - select ROM/CFG entry
  [SPACE]     - start entry normally
