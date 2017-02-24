@@ -1,4 +1,4 @@
-Carnivore MultiFlash Cartridge version 1.1
+Carnivore MultiFlash SCC Cartridge version 1.1
 Copyright (c) 2016 RBSC
 
 The Setup
@@ -44,7 +44,7 @@ following needs to be done:
  4. From the main menu select "Open cartridge's Service Menu" using the "9" key
  5. With the "7" key select "Fully erase FlashROM chip" and confirm twice
  6. With the "3" key select "Init/Erase all directory entries" to initialize the directory
- 7. With the "4" key select "Write Boot Block (bootcmfc.bin)" to write the Boot Block
+ 7. With the "4" key select "Write Boot Block (bootcscc.bin)" to write the Boot Block
  8. If there were no errors during the steps 5-7, then power down and start your MSX
 
 
@@ -83,7 +83,7 @@ utility is for MSX1 computers using the 40 character wide display, the CMAN util
 
 The utility supports the following command line options:
 
- c2man [filename.rom] [/h] [/v] [/a] [/su]
+ cman [filename.rom] [/h] [/v] [/a] [/su]
 
  /h  - help screen
  /v  - verbose mode (show detailed information)
