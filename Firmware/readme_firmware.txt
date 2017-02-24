@@ -1,4 +1,4 @@
-Carnivore MultiFlash Cartridge version 1.1
+Carnivore MultiFlash SCC Cartridge version 1.1
 Copyright (c) 2016 RBSC
 
 The Altera firmware was created by RBSC. Commercial usage is not allowed!
