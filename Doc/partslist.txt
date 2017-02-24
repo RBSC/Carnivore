@@ -1,19 +1,35 @@
-Partslist
+Partslist for Carnivore MultiFlash SCC Cartridge
+------------------------------------------------
+
+==- Microchips SMD -==
+
+U1 - Altera Flex EPF10K100ARI240-3 (PQFP208)
+U2 - M29W640 Flash ROM (TSOP48)
+U3 - Altera EPC2LC20
+
+==- Capacitors SMD 1210 -==
 
 C1,C2 - 10uF 10v
-C2 has wrong polarity on board!!!
+C2 has wrong polarity marker on the board!!!
 
-(smd 0603)
-C3-C11, C16 - 0.1uF
-C12-C14
+==- Capacitors SMD 0603 -==
 
+C3-C11,C16, C12-C14 - 0.1uF
 
-(smd 0603)
-R1 -R41 - 100 om
-R45-R50 - 1 kOm
-R65 - 1 om *
-R52,53,54 - 1 kOm *
-R55,56,57 - 1 kOm *
-R58,59,60 - 6.2 kOm *
+==- Resistors SMD 0603 -==
 
-LM1117ADJ (SOT223)
+R1 -R41 - 100 Ohm
+R45-R50 - 1 kOhm
+R65 - 1 Ohm
+R52,53,54 - 1 kOhm
+R55,56,57 - 1 kOhm
+R58,59,60 - 6.2 kOhm
+
+==- Voltage regulators -==
+
+LM1117ADJ 3.3v (SOT223)
+
+==- Sockets -==
+AX1 - ST-222 (jack 3.5mm stereo)
+
+See the readme.txt file for more info.

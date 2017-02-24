@@ -1,3 +1,10 @@
+;
+; Carnivore MultiFlash SCC Cartridge's Boot Block
+; Copyright (c) 2015-2017 RBSC
+; Version 1.0
+;
+
+
 ; Bios Calls
 ENASLT	equ	#0024
 CHPUT	equ	#00A2
@@ -126,11 +133,11 @@ Pagep:
 	call	CHCOLOR		; set screen colors
 
 	call	CLS
-	LD	HL,#0101
+	ld	hl,#0101
 	call    POSIT
 	ld	hl,StMSG_S	; Start Message
 	call	print	
-	LD	HL,#2005
+	ld	hl,#2005
 	call    POSIT
 	exx
 	ld	a,c
@@ -212,9 +219,12 @@ dRec:
 	ld	a,d
 	exx
 	ld	d,a	; restore dir enter to top page
+
+
+; set cursor pos on first entry
 CH00:
-;posit cursor
-	ld	h,5
+	call	c_dir
+	ld	h,7
 	ld	a,e
 	add	a,7
 	ld	l,a
@@ -390,7 +400,15 @@ RUN_CR:
 	ld	de,CardMDR+#06
 	ld	bc,26
 	ldir
-	jp	0	;reset operations
+
+; !!! Check the reset flag for F4 port from the directory entry!
+; Support for this flag is pending, may be not implemented after all
+
+	in	a,(#F4)
+	or	#80
+	out	(#F4),a		; avoid "warm" reset on MSX2+
+
+	jp	0000		;reset operation
 
 RUN_CJ:
 	call	Restfnt
@@ -615,7 +633,7 @@ Help:
 
 	ld	hl,helpmsg
 	call	print
-	LD	HL,#1D15	; position cursor after "Press any key"
+	ld	hl,#1D15	; position cursor after "Press any key"
 	call    POSIT
 
 	ld	a,11
@@ -637,7 +655,7 @@ Exit:
 ;Font address and slot save and restore
 ;
 Restfnt:
-	push	AF
+	push	af
 	push	hl
 	push	de
 	push	bc
@@ -654,17 +672,17 @@ Restfnt:
 	ld	(BAKCLR),a
 	ld	(BDRCLR),a
 	call	CHCOLOR		; set screen colors
-        LD	A,4
-  	LD	HL,#0711
-	CALL	PALETTE
+        ld	a,4
+  	ld	hl,#0711
+	call	PALETTE
 	call	CLS
 	pop	bc
 	pop	de
 	pop	hl
-	pop	AF
+	pop	af
 	ret
 
-Setfnt:	push	AF
+Setfnt:	push	af
 	push	hl
 	push	de
 	push	bc
@@ -692,36 +710,36 @@ Setfnt:	push	AF
 	ld	(BAKCLR),a
 	ld	(BDRCLR),a
 	call	CHCOLOR		; set screen colors
-;	LD	A,14 
-;	LD	HL,#FFFF
-;	CALL	PALETTE
-        LD	A,4
-  	LD	HL,#0211
-	CALL	PALETTE
+;	ld	a,14 
+;	ld	hl,#FFFF
+;	call	PALETTE
+        ld	a,4
+  	ld	hl,#0211
+	call	PALETTE
 	call	CLS
 	pop	bc
 	pop	de
 	pop	hl
-	pop	AF
+	pop	af
 	ret
 
 
 ;Set palette for a color
-PALETTE:OUT	(#99),A
-	LD	A,#90
-	OUT	(#99),A
-	EI
-	EX	(SP),HL
-	EX	(SP),HL
-        LD	A,H
-        OUT	(#9A),A
-        LD	A,L
-        OUT	(#9A),A
-	RET
+PALETTE:out	(#99),a
+	ld	a,#90
+	out	(#99),a
+	ei
+	ex	(sp),hl
+	ex	(sp),hl
+        ld	a,h
+        out	(#9A),a
+        ld	a,l
+        out	(#9A),a
+	ret
 
 
 ; Print	String
-; Inp reg HL - point start String
+; Inp reg hl - point start String
 ; (hl) = 0 -> end
 print:
 	ld	a,(hl)
@@ -831,14 +849,14 @@ he1:	call	CHPUT
 he2:	call	CHPUT
 	ret
 
-CLS:	push	AF
+CLS:	push	af
 	push	de
 	push	bc
 	xor	a
 	call	CLEARS
 	pop	bc
 	pop	de
-	pop	AF
+	pop	af
 	ret
 	
 StMSG_S:
