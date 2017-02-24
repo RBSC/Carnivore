@@ -15,7 +15,7 @@ After assembling, the cartridge needs to be programmed in order to function prop
 How to upload the firmware
 --------------------------
 
-Before uploading the firmware please make sure that boots fine with the inserted cartridge!
+Before uploading the firmware please make sure that your MSX boots fine with the inserted cartridge!
 
  1. Solder jumper pins to the "+5v" and "GND" soldering points (or solder wires to both sides of C1 capacitor)
  2. Prepare the ByteBlaster 2 programmer, open the Quartus II software
