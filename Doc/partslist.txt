@@ -4,7 +4,7 @@ Partslist for Carnivore MultiFlash SCC Cartridge
 ==- Microchips SMD -==
 
 U1 - Altera Flex EPF10K100ARI240-3 (PQFP208)
-U2 - M29W640 Flash ROM (TSOP48)
+U2 - M29W640GB Flash ROM (TSOP48)
 U3 - Altera EPC2LC20
 
 ==- Capacitors SMD 1210 -==
