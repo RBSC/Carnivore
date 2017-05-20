@@ -1,0 +1,164 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 1991-2009 Altera Corporation
+# Your use of Altera Corporation's design tools, logic functions 
+# and other software and tools, and its AMPP partner logic 
+# functions, and any output files from any of the foregoing 
+# (including device programming or simulation files), and any 
+# associated documentation or information are expressly subject 
+# to the terms and conditions of the Altera Program License 
+# Subscription Agreement, Altera MegaCore Function License 
+# Agreement, or other applicable license agreement, including, 
+# without limitation, that your use is for the sole purpose of 
+# programming logic devices manufactured by Altera and sold by 
+# Altera or its authorized distributors.  Please refer to the 
+# applicable agreement for further details.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus II
+# Version 9.0 Build 132 02/25/2009 SJ Full Version
+# Date created = 19:45:57  July 26, 2015
+#
+# -------------------------------------------------------------------------- #
+#
+# Notes:
+#
+# 1) The default values for assignments are stored in the file:
+#		scc_assignment_defaults.qdf
+#    If this file doesn't exist, see file:
+#		assignment_defaults.qdf
+#
+# 2) Altera recommends that you do not modify this file. This
+#    file is updated automatically by the Quartus II software
+#    and any changes you make may be lost or overwritten.
+#
+# -------------------------------------------------------------------------- #
+
+
+set_global_assignment -name FAMILY FLEX10KA
+set_global_assignment -name DEVICE "EPF10K100ARI240-3"
+set_global_assignment -name TOP_LEVEL_ENTITY cscc
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 9.0
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "19:45:57  JULY 26, 2015"
+set_global_assignment -name LAST_QUARTUS_VERSION 9.0
+set_global_assignment -name MISC_FILE "K:/msx/ALTERA_S_MSX/aa/cscc/scc.dpf"
+set_global_assignment -name VHDL_FILE cscc.vhd
+set_global_assignment -name MISC_FILE "K:/msx/ALTERA_S_MSX/aa/ccssc/cscc.dpf"
+set_global_assignment -name MISC_FILE "K:/msx/ALTERA_S_MSX/aa/cssc/cscc.dpf"
+set_location_assignment PIN_91 -to pSltClk
+set_location_assignment PIN_211 -to pSltClk2
+set_location_assignment PIN_103 -to pSltRst_n
+set_location_assignment PIN_118 -to pSltSltsl_n
+set_location_assignment PIN_119 -to pSltCs1
+set_location_assignment PIN_120 -to pSltCs2
+set_location_assignment PIN_117 -to pSltCs12
+set_location_assignment PIN_109 -to pSltMerq_n
+set_location_assignment PIN_108 -to pSltIorq_n
+set_location_assignment PIN_111 -to pSltBdir_n
+set_location_assignment PIN_107 -to pSltRd_n
+set_location_assignment PIN_106 -to pSltWr_n
+set_location_assignment PIN_110 -to pSltM1_n
+set_location_assignment PIN_116 -to pSltRfsh_n
+set_location_assignment PIN_113 -to pSltWait_n
+set_location_assignment PIN_114 -to pSltInt_n
+set_location_assignment PIN_115 -to pSltRsv5
+set_location_assignment PIN_105 -to pSltRsv16
+set_location_assignment PIN_86 -to pSltAdr[0]
+set_location_assignment PIN_84 -to pSltAdr[1]
+set_location_assignment PIN_83 -to pSltAdr[2]
+set_location_assignment PIN_82 -to pSltAdr[3]
+set_location_assignment PIN_81 -to pSltAdr[4]
+set_location_assignment PIN_80 -to pSltAdr[5]
+set_location_assignment PIN_98 -to pSltAdr[6]
+set_location_assignment PIN_97 -to pSltAdr[7]
+set_location_assignment PIN_95 -to pSltAdr[8]
+set_location_assignment PIN_101 -to pSltAdr[9]
+set_location_assignment PIN_100 -to pSltAdr[10]
+set_location_assignment PIN_99 -to pSltAdr[11]
+set_location_assignment PIN_94 -to pSltAdr[12]
+set_location_assignment PIN_88 -to pSltAdr[13]
+set_location_assignment PIN_87 -to pSltAdr[14]
+set_location_assignment PIN_102 -to pSltAdr[15]
+set_location_assignment PIN_79 -to pSltDat[0]
+set_location_assignment PIN_78 -to pSltDat[1]
+set_location_assignment PIN_76 -to pSltDat[2]
+set_location_assignment PIN_75 -to pSltDat[3]
+set_location_assignment PIN_74 -to pSltDat[4]
+set_location_assignment PIN_72 -to pSltDat[5]
+set_location_assignment PIN_71 -to pSltDat[6]
+set_location_assignment PIN_70 -to pSltDat[7]
+set_location_assignment PIN_227 -to pSltSndL
+set_location_assignment PIN_226 -to pSltSndR
+set_location_assignment PIN_228 -to pSltSound
+set_global_assignment -name FLEX6K_CONFIGURATION_DEVICE EPC2LC20
+set_global_assignment -name FLEX10K_CONFIGURATION_DEVICE EPC2
+set_global_assignment -name DISABLE_NCS_AND_OE_PULLUPS_ON_CONFIG_DEVICE OFF
+set_global_assignment -name FLEX10K_ENABLE_LOW_VOLTAGE_MODE_ON_CONFIG_DEVICE OFF
+set_global_assignment -name FLEX6K_OPTIMIZATION_TECHNIQUE AREA
+set_global_assignment -name FLEX10K_OPTIMIZATION_TECHNIQUE AREA
+set_global_assignment -name STATE_MACHINE_PROCESSING AUTO
+set_global_assignment -name AUTO_FAST_INPUT_REGISTERS ON
+set_global_assignment -name AUTO_FAST_OUTPUT_REGISTERS ON
+set_global_assignment -name AUTO_PACKED_REGISTERS OFF
+set_global_assignment -name AUTO_OPEN_DRAIN_PINS ON
+set_global_assignment -name AUTO_IMPLEMENT_IN_ROM OFF
+set_global_assignment -name AUTO_GLOBAL_CLOCK ON
+set_global_assignment -name AUTO_GLOBAL_REGISTER_CONTROLS ON
+set_global_assignment -name AUTO_GLOBAL_OE ON
+set_global_assignment -name VHDL_FILE lpm_ram.vhd
+set_global_assignment -name VHDL_FILE scc_wave.vhd
+set_global_assignment -name CDF_FILE scc.cdf
+set_global_assignment -name MISC_FILE "K:/msx/ALTERA_S_MSX/aa/scc/scc.dpf"
+set_global_assignment -name FLEX10K_DEVICE_IO_STANDARD LVTTL/LVCMOS
+set_location_assignment PIN_19 -to pFlAdr[8]
+set_location_assignment PIN_233 -to pFlAdr[14]
+set_location_assignment PIN_231 -to pFlAdr[15]
+set_location_assignment PIN_230 -to pFlAdr[16]
+set_location_assignment PIN_234 -to pFlAdr[13]
+set_location_assignment PIN_235 -to pFlAdr[12]
+set_location_assignment PIN_237 -to pFlAdr[11]
+set_location_assignment PIN_6 -to pFlAdr[10]
+set_location_assignment PIN_7 -to pFlAdr[9]
+set_location_assignment PIN_18 -to pFlAdr[18]
+set_location_assignment PIN_17 -to pFlAdr[19]
+set_location_assignment PIN_12 -to pFlW_n
+set_location_assignment PIN_13 -to pFlRP_n
+set_location_assignment PIN_8 -to pFlAdr[20]
+set_location_assignment PIN_14 -to pFlAdr[22]
+set_location_assignment PIN_9 -to pFlAdr[21]
+set_location_assignment PIN_30 -to pFlAdr[17]
+set_location_assignment PIN_20 -to pFlAdr[7]
+set_location_assignment PIN_21 -to pFlAdr[6]
+set_location_assignment PIN_24 -to pFlAdr[5]
+set_location_assignment PIN_25 -to pFlAdr[4]
+set_location_assignment PIN_28 -to pFlAdr[3]
+set_location_assignment PIN_29 -to pFlAdr[2]
+set_location_assignment PIN_55 -to pFlAdr[1]
+set_location_assignment PIN_33 -to pFlAdr[0]
+set_location_assignment PIN_31 -to pFlBYTE_n
+set_location_assignment PIN_54 -to pFlCS_n
+set_location_assignment PIN_34 -to pFlDat[7]
+set_location_assignment PIN_36 -to pFlDat[6]
+set_location_assignment PIN_39 -to pFlDat[5]
+set_location_assignment PIN_41 -to pFlDat[4]
+set_location_assignment PIN_44 -to pFlDat[3]
+set_location_assignment PIN_46 -to pFlDat[2]
+set_location_assignment PIN_49 -to pFlDat[1]
+set_location_assignment PIN_51 -to pFlDat[0]
+set_location_assignment PIN_35 -to pFlDatH[6]
+set_location_assignment PIN_38 -to pFlDatH[5]
+set_location_assignment PIN_40 -to pFlDatH[4]
+set_location_assignment PIN_43 -to pFlDatH[3]
+set_location_assignment PIN_45 -to pFlDatH[2]
+set_location_assignment PIN_48 -to pFlDatH[1]
+set_location_assignment PIN_50 -to pFlDatH[0]
+set_location_assignment PIN_53 -to pFlOE_n
+set_location_assignment PIN_56 -to pFlVpp
+set_location_assignment PIN_15 -to pFlRB_b
+
+set_global_assignment -name ON_CHIP_BITSTREAM_DECOMPRESSION OFF
+set_global_assignment -name INCREMENTAL_COMPILATION OFF
+set_location_assignment PIN_61 -to iFsts
+set_global_assignment -name DEVICE_FILTER_PIN_COUNT 240
+set_global_assignment -name DEVICE_FILTER_PACKAGE "ANY QFP"

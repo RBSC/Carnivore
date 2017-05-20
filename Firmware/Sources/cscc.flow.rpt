@@ -1,0 +1,116 @@
+Flow report for cscc
+Wed Mar 02 18:58:07 2016
+Quartus II Version 9.0 Build 132 02/25/2009 SJ Full Version
+
+
+---------------------
+; Table of Contents ;
+---------------------
+  1. Legal Notice
+  2. Flow Summary
+  3. Flow Settings
+  4. Flow Non-Default Global Settings
+  5. Flow Elapsed Time
+  6. Flow OS Summary
+  7. Flow Log
+
+
+
+----------------
+; Legal Notice ;
+----------------
+Copyright (C) 1991-2009 Altera Corporation
+Your use of Altera Corporation's design tools, logic functions 
+and other software and tools, and its AMPP partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Altera Program License 
+Subscription Agreement, Altera MegaCore Function License 
+Agreement, or other applicable license agreement, including, 
+without limitation, that your use is for the sole purpose of 
+programming logic devices manufactured by Altera and sold by 
+Altera or its authorized distributors.  Please refer to the 
+applicable agreement for further details.
+
+
+
++--------------------------------------------------------------------+
+; Flow Summary                                                       ;
++-------------------------+------------------------------------------+
+; Flow Status             ; Successful - Wed Mar 02 18:58:07 2016    ;
+; Quartus II Version      ; 9.0 Build 132 02/25/2009 SJ Full Version ;
+; Revision Name           ; cscc                                     ;
+; Top-level Entity Name   ; cscc                                     ;
+; Family                  ; FLEX10KA                                 ;
+; Device                  ; EPF10K100ARI240-3                        ;
+; Timing Models           ; Final                                    ;
+; Met timing requirements ; No                                       ;
+; Total logic elements    ; 1,732 / 4,992 ( 35 % )                   ;
+; Total pins              ; 91 / 189 ( 48 % )                        ;
+; Total memory bits       ; 2,048 / 24,576 ( 8 % )                   ;
++-------------------------+------------------------------------------+
+
+
++-----------------------------------------+
+; Flow Settings                           ;
++-------------------+---------------------+
+; Option            ; Setting             ;
++-------------------+---------------------+
+; Start date & time ; 03/02/2016 18:57:37 ;
+; Main task         ; Compilation         ;
+; Revision Name     ; cscc                ;
++-------------------+---------------------+
+
+
++------------------------------------------------------------------------------------------------------------------------------+
+; Flow Non-Default Global Settings                                                                                             ;
++----------------------------+---------------------------------------+------------------------------+-------------+------------+
+; Assignment Name            ; Value                                 ; Default Value                ; Entity Name ; Section Id ;
++----------------------------+---------------------------------------+------------------------------+-------------+------------+
+; AUTO_FAST_INPUT_REGISTERS  ; On                                    ; Off                          ; --          ; --         ;
+; AUTO_FAST_OUTPUT_REGISTERS ; On                                    ; Off                          ; --          ; --         ;
+; COMPILER_SIGNATURE_ID      ; 18413740489792.145691985709552        ; --                           ; --          ; --         ;
+; INCREMENTAL_COMPILATION    ; Off                                   ; FULL_INCREMENTAL_COMPILATION ; --          ; --         ;
+; MISC_FILE                  ; K:/msx/ALTERA_S_MSX/aa/cscc/scc.dpf   ; --                           ; --          ; --         ;
+; MISC_FILE                  ; K:/msx/ALTERA_S_MSX/aa/ccssc/cscc.dpf ; --                           ; --          ; --         ;
+; MISC_FILE                  ; K:/msx/ALTERA_S_MSX/aa/cssc/cscc.dpf  ; --                           ; --          ; --         ;
+; MISC_FILE                  ; K:/msx/ALTERA_S_MSX/aa/scc/scc.dpf    ; --                           ; --          ; --         ;
++----------------------------+---------------------------------------+------------------------------+-------------+------------+
+
+
++-----------------------------------------------------------------------------------------------------------------------------+
+; Flow Elapsed Time                                                                                                           ;
++-------------------------+--------------+-------------------------+---------------------+------------------------------------+
+; Module Name             ; Elapsed Time ; Average Processors Used ; Peak Virtual Memory ; Total CPU Time (on all processors) ;
++-------------------------+--------------+-------------------------+---------------------+------------------------------------+
+; Analysis & Synthesis    ; 00:00:08     ; 1.0                     ; 248 MB              ; 00:00:07                           ;
+; Fitter                  ; 00:00:15     ; 1.0                     ; 230 MB              ; 00:00:14                           ;
+; Assembler               ; 00:00:02     ; 1.0                     ; 214 MB              ; 00:00:01                           ;
+; Classic Timing Analyzer ; 00:00:01     ; 1.0                     ; 185 MB              ; 00:00:01                           ;
+; Total                   ; 00:00:26     ; --                      ; --                  ; 00:00:23                           ;
++-------------------------+--------------+-------------------------+---------------------+------------------------------------+
+
+
++------------------------------------------------------------------------------------------+
+; Flow OS Summary                                                                          ;
++-------------------------+------------------+---------------+------------+----------------+
+; Module Name             ; Machine Hostname ; OS Name       ; OS Version ; Processor type ;
++-------------------------+------------------+---------------+------------+----------------+
+; Analysis & Synthesis    ; magic003         ; Windows Vista ; 6.1        ; x86_64         ;
+; Fitter                  ; magic003         ; Windows Vista ; 6.1        ; x86_64         ;
+; Assembler               ; magic003         ; Windows Vista ; 6.1        ; x86_64         ;
+; Classic Timing Analyzer ; magic003         ; Windows Vista ; 6.1        ; x86_64         ;
++-------------------------+------------------+---------------+------------+----------------+
+
+
+------------
+; Flow Log ;
+------------
+quartus_map --read_settings_files=on --write_settings_files=off cscc -c cscc
+quartus_fit --read_settings_files=off --write_settings_files=off cscc -c cscc
+quartus_asm --read_settings_files=off --write_settings_files=off cscc -c cscc
+quartus_tan --read_settings_files=off --write_settings_files=off cscc -c cscc
+
+
+

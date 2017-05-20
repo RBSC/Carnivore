@@ -1,0 +1,10 @@
+Fitter Status : Successful - Wed Mar 02 18:58:02 2016
+Quartus II Version : 9.0 Build 132 02/25/2009 SJ Full Version
+Revision Name : cscc
+Top-level Entity Name : cscc
+Family : FLEX10KA
+Device : EPF10K100ARI240-3
+Timing Models : Final
+Total logic elements : 1,732 / 4,992 ( 35 % )
+Total pins : 91 / 189 ( 48 % )
+Total memory bits : 2,048 / 24,576 ( 8 % )
