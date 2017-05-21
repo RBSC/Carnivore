@@ -1,6 +1,7 @@
 Carnivore MultiFlash SCC Cartridge version 1.1
 Copyright (c) 2016-2017 RBSC
 
+Partslist
 
 ==- Microchips SMD -==
 
