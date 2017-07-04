@@ -1,6 +1,11 @@
 Carnivore MultiFlash SCC Cartridge version 1.1
 Copyright (c) 2016-2017 RBSC
 
+
+WARNING! To avoid damage to the Carnivore cartridge and your MSX computer hardware never insert or remove the cartridge
+when a computer is powered on! Always power off your computer before inserting or removing of any cartridge!
+
+
 The Setup
 ---------
 
